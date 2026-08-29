@@ -1,0 +1,12 @@
+{
+  "target_repo": "D:\\team_project_os\\team_project_os-main",
+  "worktree": "D:\\AI_worker\\worktree\\team_project_os",
+  "branch": "ai/team-project-os-improvement",
+  "base_branch": "main",
+  "verification": {
+    "commands": [
+      "python -m compileall app tests tools",
+      "python -m unittest discover -s tests"
+    ]
+  }
+}
