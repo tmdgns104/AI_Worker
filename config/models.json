@@ -1,0 +1,22 @@
+{
+  "ollama_url": "http://127.0.0.1:11434",
+  "roles": {
+    "scout": "qwen3:4b",
+    "planner": "qwen3:8b",
+    "coder": "qwen2.5-coder:7b",
+    "reviewer": "qwen3.5:9b",
+    "escalation_coder": "qwen2.5-coder:14b-instruct-q3_K_S",
+    "alternate_reviewer": "mistral-nemo:12b-instruct-2407-q3_K_S"
+  },
+  "experimental": [
+    "command-r7b:7b-12-2024-q4_K_M"
+  ],
+  "limits": {
+    "selected_files": 8,
+    "max_file_chars": 18000,
+    "max_total_context_chars": 70000,
+    "num_ctx_default": 8192,
+    "num_ctx_heavy": 6144,
+    "temperature": 0.15
+  }
+}
