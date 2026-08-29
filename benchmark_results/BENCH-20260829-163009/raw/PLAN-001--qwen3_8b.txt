@@ -1,0 +1,37 @@
+{
+  "summary": "Test regression for first eligible message exceeding max_characters without altering production code",
+  "steps": [
+    "Create test case with messages where first eligible message exceeds max_characters",
+    "Verify select_message_chunk excludes first message and includes subsequent ones",
+    "Ensure test preserves existing progress behavior",
+    "Validate character limit enforcement without modifying production code"
+  ],
+  "files_to_change": ["tests/test_v016_blocker_regressions.py"],
+  "tests": [
+    "def test_first_eligible_exceeds_max_characters(self):",
+    "    messages = [",
+    "        ConversationMessage(cursor=1, content='a'*200),",
+    "        ConversationMessage(cursor=2, content='a'*50),",
+    "        ConversationMessage(cursor=3, content='a'*50),",
+    "    ]",
+    "    selected, total = select_message_chunk(", 
+    "        messages, after_cursor=1, max_characters=100",
+    "    )",
+    "    self.assertEqual([item.cursor for item in selected], [2, 3])",
+    "    self.assertEqual(total, 3)"
+  ],
+  "risks": [
+    "Incorrect redact_secrets simulation may lead to false assertions",
+    "Test may interfere with existing test cases if not properly isolated"
+  ],
+  "constraints": [
+    "Must not modify production code in app/conversation_import.py",
+    "Must preserve existing progress behavior implementation"
+  ],
+  "behavior_assertions": [
+    "First eligible message with content exceeding max_characters is excluded",
+    "Subsequent messages are included until character limit is reached",
+    "Total_unimported reflects correct count of eligible messages",
+    "No changes to production code implementation"
+  ]
+}

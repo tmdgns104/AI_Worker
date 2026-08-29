@@ -1,0 +1,35 @@
+{
+  "summary": "Add a regression test to validate that symlinks resolving outside the Codex sessions directory are safely ignored during session enumeration without modifying production code.",
+  "steps": [
+    "Create a temporary directory structure mimicking codex_home with 'sessions' and 'archived_sessions' subdirectories.",
+    "Place a valid JSONL file inside the 'sessions' directory to serve as a baseline session.",
+    "Manually create a symlink inside the 'sessions' directory that points to an external file outside the root (e.g., /etc/passwd or a temp file).",
+    "Instantiate CodexConversationProvider with the temporary directory path.",
+    "Call provider.list_sessions() to enumerate available sessions.",
+    "Assert that the returned session list contains only the valid internal JSONL file and excludes the symlinked external file.",
+    "Assert that no exceptions (OSError, ValueError) are raised during enumeration despite the presence of the malicious symlink."
+  ],
+  "files_to_change": [
+    "tests/test_conversation_import_v016.py"
+  ],
+  "tests": [
+    {
+      "name": "test_symlink_outside_directory_is_ignored",
+      "description": "Verify that symlinks pointing outside the root directory are skipped and do not expose external file contents or cause enumeration failures."
+    }
+  ],
+  "risks": [
+    "Path traversal vulnerability if symlink resolution logic is weakened in future updates.",
+    "Information leakage via reading external files if the exception handling is bypassed."
+  ],
+  "constraints": [
+    "Do not modify production code in app/conversation_providers.py.",
+    "Provider instance must be treated as read-only during test execution.",
+    "Use only standard Python libraries for symlink creation (os.symlink)."
+  ],
+  "behavior_assertions": [
+    "list_sessions() returns a list containing only the valid internal session.",
+    "The symlinked file path is not present in the returned session list.",
+    "No exceptions are raised during provider initialization or session listing."
+  ]
+}

@@ -1,0 +1,194 @@
+{
+  "models": [
+    {
+      "role": "scout",
+      "model": "qwen3:8b",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 1,
+      "hard_gate_rate": 0.5,
+      "mean_score": 64.38,
+      "mean_latency_seconds": 20.89,
+      "qualified": false
+    },
+    {
+      "role": "scout",
+      "model": "qwen3.5:9b",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 56.04,
+      "mean_latency_seconds": 22.99,
+      "qualified": false
+    },
+    {
+      "role": "planner",
+      "model": "qwen3:8b",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 1,
+      "hard_gate_rate": 0.5,
+      "mean_score": 85.0,
+      "mean_latency_seconds": 35.67,
+      "qualified": false
+    },
+    {
+      "role": "planner",
+      "model": "qwen3.5:9b",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 1,
+      "hard_gate_rate": 0.5,
+      "mean_score": 87.5,
+      "mean_latency_seconds": 72.36,
+      "qualified": false
+    },
+    {
+      "role": "planner",
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 1,
+      "hard_gate_rate": 0.5,
+      "mean_score": 85.0,
+      "mean_latency_seconds": 22.1,
+      "qualified": false
+    },
+    {
+      "role": "coder",
+      "model": "qwen2.5-coder:7b",
+      "slots": 1,
+      "request_successes": 1,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 25,
+      "mean_latency_seconds": 12.26,
+      "qualified": false
+    },
+    {
+      "role": "coder",
+      "model": "qwen3.5:9b",
+      "slots": 1,
+      "request_successes": 1,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 25,
+      "mean_latency_seconds": 26.18,
+      "qualified": false
+    },
+    {
+      "role": "coder",
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "slots": 1,
+      "request_successes": 1,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 10,
+      "mean_latency_seconds": 37.26,
+      "qualified": false
+    },
+    {
+      "role": "reviewer",
+      "model": "qwen3.5:9b",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 63.34,
+      "mean_latency_seconds": 89.42,
+      "qualified": false
+    },
+    {
+      "role": "reviewer",
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_S",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 1,
+      "hard_gate_rate": 0.5,
+      "mean_score": 62.09,
+      "mean_latency_seconds": 10.77,
+      "qualified": false
+    },
+    {
+      "role": "reviewer",
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 1,
+      "hard_gate_rate": 0.5,
+      "mean_score": 45.62,
+      "mean_latency_seconds": 19.58,
+      "qualified": false
+    },
+    {
+      "role": "escalation_coder",
+      "model": "qwen3.5:9b",
+      "slots": 1,
+      "request_successes": 1,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 30,
+      "mean_latency_seconds": 26.45,
+      "qualified": false
+    },
+    {
+      "role": "escalation_coder",
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "slots": 1,
+      "request_successes": 1,
+      "hard_gate_passes": 1,
+      "hard_gate_rate": 1.0,
+      "mean_score": 95,
+      "mean_latency_seconds": 24.5,
+      "qualified": true
+    }
+  ],
+  "recommendations": {
+    "scout": {
+      "primary": "qwen3:8b",
+      "fallback": "qwen3.5:9b",
+      "primary_qualified": false,
+      "reason": "hard gates 1/2, mean score 64.38, mean latency 20.89s"
+    },
+    "planner": {
+      "primary": "qwen3.5:9b",
+      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "primary_qualified": false,
+      "reason": "hard gates 1/2, mean score 87.5, mean latency 72.36s"
+    },
+    "coder": {
+      "primary": "qwen2.5-coder:7b",
+      "fallback": "qwen3.5:9b",
+      "primary_qualified": false,
+      "reason": "hard gates 0/1, mean score 25, mean latency 12.26s"
+    },
+    "reviewer": {
+      "primary": "mistral-nemo:12b-instruct-2407-q3_K_S",
+      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "primary_qualified": false,
+      "reason": "hard gates 1/2, mean score 62.09, mean latency 10.77s"
+    },
+    "escalation_coder": {
+      "primary": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "fallback": "qwen3.5:9b",
+      "primary_qualified": true,
+      "reason": "hard gates 1/1, mean score 95, mean latency 24.5s"
+    }
+  },
+  "run_id": "BENCH-20260829-163009",
+  "suite_id": "team-project-os-role-benchmark-v2",
+  "completed_at": "2026-08-29T07:42:14.220151+00:00",
+  "slot_count": 21,
+  "target_after": {
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "clean": true,
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "app/conversation_providers.py": "650e3ff64901f427766d745e62fe92d32b8eb679",
+      "app/main_v016.py": "43c8b124c9862fac4e921b7a98ce42d8912dc62e",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1",
+      "tests/test_conversation_import_v016.py": "fb8adb4dc93069cf9e11932049bfbf09105a4665"
+    }
+  }
+}

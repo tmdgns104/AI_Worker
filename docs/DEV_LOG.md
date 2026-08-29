@@ -77,3 +77,48 @@ unchanged. Commit: `fix Windows doctor readiness` (enclosing logical commit).
 ### Remaining
 
 The model benchmark and first real Target improvement remain unverified.
+
+---
+
+## 2026-08-29 — D-003 Versioned Role Benchmark Harness
+
+### Task
+
+Build and execute Target-grounded Scout, Planner, Coder, Reviewer, and Escalation Coder
+benchmarks, then select Evidence-based routing.
+
+### Changed
+
+- Added versioned suite v1/v2, Stable Cases, frozen Target hashes/runtime, and defect
+  fixtures.
+- Added loopback/digest validation, line-bounded context, raw output, JSONL results,
+  latency/runtime metadata, scoring, hard gates, and qualification-aware summaries.
+- Added disposable-clone patch apply and exact focused-test execution.
+- Added deterministic fenced JSON/diff extraction while retaining strict-format metrics.
+- Added 10 benchmark/evaluator tests, bringing the AI Worker suite to 15 tests.
+- Updated model routing, temperature, seed, context, Architecture decision, research,
+  benchmark, and project status.
+
+### Verification
+
+- AI Worker unit tests — 15/15 PASS
+- Python compile — PASS
+- Suite/config JSON parsing — PASS
+- Doctor with updated roles — PASS
+- v1 model run — retained as diagnostic Evidence
+- v2 model run — 21/21 requests completed
+- v2 Target before/after HEAD/hash/clean gates — PASS
+- Escalation disposable apply and exact focused test — PASS
+- `git diff --check` — PASS
+
+### Result
+
+Role routing is Evidence-based and explicitly conditional where no model qualified.
+Qwen 14B is qualified only for the tested feedback-driven Escalation case. Commit:
+`add role-based local model benchmark` (enclosing logical commit).
+
+### Remaining
+
+The first real Target E2E change and broad multi-case Coder qualification remain
+UNVERIFIED. Target baseline full discovery currently has one pre-existing test import
+failure; this Task did not modify Target code.

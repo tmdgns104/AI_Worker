@@ -6,16 +6,16 @@
 
 ## Current Task
 
-`TASK-001 — Windows Doctor Readiness` — IMPLEMENTED AND VERIFIED
+`TASK-002 — Role-based Local Development Benchmark` — IMPLEMENTED AND VERIFIED
 
 ## Previous Task
 
-Repository bootstrap and initial bounded worker harness — DONE upstream.
+`TASK-001 — Windows Doctor Readiness` — IMPLEMENTED AND VERIFIED.
 
 ## Next Task
 
-Replace the synthetic single-prompt benchmark with a small, versioned role benchmark
-suite, then run the installed models under identical bounded conditions.
+Run one small real `team_project_os` improvement through Scout → Planner → Coder →
+Reviewer → Codex using the conditional routing and hard gates proven here.
 
 ## Current Target
 
@@ -42,11 +42,11 @@ suite, then run the installed models under identical bounded conditions.
 - Codex Supervisor rules: DONE
 - Research/Development logging structure: DONE
 - Minimal Harness: IN PROGRESS
-- Local `D:\AI_worker` checkout: VERIFIED at `c1fe1f665ad7b3f5d6c8500480839426331a7a10`
+- Local `D:\AI_worker` checkout: VERIFIED (clean baseline before TASK-002)
 - Environment doctor: PASS
 - Ollama connectivity: VERIFIED (`0.33.1`, seven installed models)
 - Git worktree bootstrap: VERIFIED
-- First model benchmark: NOT STARTED
+- First model benchmark: DONE (`BENCH-20260829-163009`, v2, 21 slots)
 - First real `team_project_os` improvement Task: NOT STARTED
 
 ## Current Architecture
@@ -58,14 +58,17 @@ No Architecture change was required for TASK-001.
 
 ## Current Worker Routing
 
-- Scout: `qwen3:4b`
-- Planner: `qwen3:8b`
-- Coder: `qwen2.5-coder:7b`
-- Reviewer: `qwen3.5:9b`
-- Escalation Coder: `qwen2.5-coder:14b-instruct-q3_K_S`
-- Alternate Reviewer: `mistral-nemo:12b-instruct-2407-q3_K_S`
+- Scout: `qwen3:8b` → `qwen3.5:9b` — CONDITIONAL; deterministic path/context gate.
+- Planner: `qwen3:8b` → `qwen2.5-coder:14b-instruct-q3_K_S` — CONDITIONAL;
+  behavior semantics require independent validation.
+- Coder: `qwen2.5-coder:7b` fast candidate → 14B feedback escalation —
+  UNQUALIFIED one-shot; never auto-apply.
+- Reviewer: `mistral-nemo:12b-instruct-2407-q3_K_S` for ordinary regression review;
+  14B for filesystem/security review — CONDITIONAL SPLIT.
+- Escalation Coder: `qwen2.5-coder:14b-instruct-q3_K_S` — QUALIFIED on ESC-001.
 
-All routes remain provisional until the role benchmark suite passes.
+No single installed model qualified across every tested case for Scout, Planner, Coder,
+or Reviewer. Hard gates and Codex takeover remain mandatory.
 
 ## Latest Evidence
 
@@ -77,18 +80,26 @@ All routes remain provisional until the role benchmark suite passes.
   `3c05219d50a51f2bdad8e6671e702e8c5d575e50`
 - Original Target remained on `main`; its pre-existing untracked
   `team_project_os-main.zip` was not modified.
+- Benchmark v1: 21 slots retained; exposed a Planner false pass and invalid focused-test
+  command, so it is diagnostic only.
+- Benchmark v2: 21/21 requests completed, 714.23 seconds summed request latency.
+- Escalation 14B: 95 points, `git apply --check` PASS, exact focused test PASS.
+- Target before/after: clean at `3c05219`; five source hashes unchanged.
+- AI Worker unit tests: 15/15 PASS.
 
 ## Known Problems
 
-- The current benchmark is a synthetic JSON/file-selection smoke test, not yet the
-  required role-based development benchmark.
 - `run_task` has no bounded automatic retry state machine or focused-test execution.
 - No real Target candidate has yet passed apply, test, and Codex acceptance.
+- One-shot Coder has no qualified installed model on CODE-001.
+- Target baseline `python -m unittest discover -s tests` currently has a pre-existing
+  import failure for `tests.test_conversation_import_v016`; benchmark focused testing
+  uses a disposable `tests/__init__.py` and an exact test name.
 
 ## Next Experiment
 
-Run a versioned benchmark packet for Scout, Planner, Coder, and Reviewer with hard
-schema/patch gates, latency, context size, and retained raw Evidence.
+Use the conditional routing in one small read-first Target E2E Task. Measure candidate
+acceptance, revision/escalation count, Codex intervention, and focused/regression time.
 
 ## First Validation Sequence
 

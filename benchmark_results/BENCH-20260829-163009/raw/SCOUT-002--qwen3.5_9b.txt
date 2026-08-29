@@ -1,0 +1,7 @@
+{
+  "files": [
+    "tests/test_v016_blocker_regressions.py",
+    "tests/test_provider_adapters.py"
+  ],
+  "reason": "Adding symlink security regression test in blocker regressions file and updating provider adapter tests to verify read-only boundary enforcement. These files directly address the Codex sessions root isolation requirement without modifying production code."
+}

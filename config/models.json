@@ -1,12 +1,45 @@
 {
   "ollama_url": "http://127.0.0.1:11434",
   "roles": {
-    "scout": "qwen3:4b",
+    "scout": "qwen3:8b",
     "planner": "qwen3:8b",
     "coder": "qwen2.5-coder:7b",
-    "reviewer": "qwen3.5:9b",
+    "reviewer": "mistral-nemo:12b-instruct-2407-q3_K_S",
     "escalation_coder": "qwen2.5-coder:14b-instruct-q3_K_S",
-    "alternate_reviewer": "mistral-nemo:12b-instruct-2407-q3_K_S"
+    "alternate_reviewer": "qwen2.5-coder:14b-instruct-q3_K_S"
+  },
+  "routing_policy": {
+    "scout": {
+      "status": "CONDITIONAL",
+      "primary": "qwen3:8b",
+      "fallback": "qwen3.5:9b",
+      "gate": "Validate selected paths, expand with deterministic keyword search on missing required concepts."
+    },
+    "planner": {
+      "status": "CONDITIONAL",
+      "primary": "qwen3:8b",
+      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "gate": "Supervisor or deterministic assertions must validate behavior semantics; file/schema compliance is insufficient."
+    },
+    "coder": {
+      "status": "UNQUALIFIED_FAST_ATTEMPT",
+      "primary": "qwen2.5-coder:7b",
+      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "gate": "Never apply automatically; require patch extraction, git apply check, allowed-file check, and focused test."
+    },
+    "reviewer": {
+      "status": "CONDITIONAL_SPLIT",
+      "primary": "mistral-nemo:12b-instruct-2407-q3_K_S",
+      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "security_model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "gate": "Use 14B for filesystem/security review; no single tested reviewer passed both defect classes."
+    },
+    "escalation_coder": {
+      "status": "QUALIFIED_ONE_CASE",
+      "primary": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "fallback": null,
+      "gate": "Require explicit supervisor feedback plus the same apply/path/test hard gates."
+    }
   },
   "experimental": [
     "command-r7b:7b-12-2024-q4_K_M"
@@ -16,7 +49,8 @@
     "max_file_chars": 18000,
     "max_total_context_chars": 70000,
     "num_ctx_default": 8192,
-    "num_ctx_heavy": 6144,
-    "temperature": 0.15
+    "num_ctx_heavy": 8192,
+    "temperature": 0.0,
+    "seed": 42
   }
 }

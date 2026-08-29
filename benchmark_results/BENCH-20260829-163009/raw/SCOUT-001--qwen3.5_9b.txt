@@ -1,0 +1,8 @@
+{
+  "files": [
+    "tests/test_conversation_import_v016.py",
+    "tests/test_v016_blocker_regressions.py",
+    "tests/test_apply_non_regression.py"
+  ],
+  "reason": "Selected conversation import and regression test files to add coverage for the character chunk limit edge case where first eligible message must remain selectable during incremental import. These tests will validate cursor progress behavior when single messages exceed chunk limits without modifying production code."
+}

@@ -1,0 +1,28 @@
+{
+  "summary": "Test symlink resolution isolation in Codex sessions directory",
+  "steps": [
+    "Create test fixture with symlink pointing outside Codex sessions directory",
+    "Verify symlinked JSONL files are excluded from session listings",
+    "Confirm read-only provider remains unchanged",
+    "Validate security boundary enforcement prevents path traversal"
+  ],
+  "files_to_change": ["tests/test_conversation_import_v016.py"],
+  "tests": [
+    "Test symlinked files outside Codex directory are isolated",
+    "Verify read-only provider behavior remains unchanged",
+    "Confirm security boundary prevents path traversal"
+  ],
+  "risks": [
+    "Symlink resolution might bypass security checks",
+    "Test isolation could affect production code validation"
+  ],
+  "constraints": [
+    "No production code modification allowed",
+    "Must preserve read-only provider behavior"
+  ],
+  "behavior_assertions": [
+    "Symlinked JSONL files outside Codex directory are excluded from session listings",
+    "Read-only provider operations remain unaffected by test fixtures",
+    "Security boundary enforcement prevents path traversal vulnerabilities"
+  ]
+}

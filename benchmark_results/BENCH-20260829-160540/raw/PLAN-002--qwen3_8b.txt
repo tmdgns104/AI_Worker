@@ -1,0 +1,24 @@
+{
+  "summary": "Test symlink resolution boundary enforcement in Codex session file discovery",
+  "steps": [
+    "Create temporary directory structure with symlinked JSONL file outside Codex sessions directory",
+    "Verify _session_files() method excludes symlinked files outside configured directory",
+    "Confirm read-only provider remains unchanged during test",
+    "Validate existing test cases pass with new security boundary verification"
+  ],
+  "files_to_change": ["tests/test_conversation_import_v016.py"],
+  "tests": [
+    "Test symlinked JSONL file resolution outside Codex sessions directory",
+    "Verify symlinked files are excluded from session discovery",
+    "Ensure read-only provider behavior remains unchanged"
+  ],
+  "risks": [
+    "Incomplete symlink resolution testing",
+    "Potential false negatives in boundary enforcement verification"
+  ],
+  "constraints": [
+    "No production code modification allowed",
+    "Preserve read-only provider functionality",
+    "Isolate test environment from system directories"
+  ]
+}

@@ -94,3 +94,24 @@ Worker가 PASS라고 말해도 완료로 판단하지 않는다.
 ### Reason
 
 AI Worker의 핵심 자산은 단일 Harness 코드뿐 아니라 어떤 모델/Context/Orchestration 조합이 실제 개발에서 잘 작동했는지에 대한 누적 Evidence이기 때문이다.
+
+---
+
+## ADR-008 — Qualification-aware routing with deterministic repair
+
+**Status:** ACCEPTED
+
+Role routing records `QUALIFIED`, `CONDITIONAL`, and `UNQUALIFIED_FAST_ATTEMPT` instead
+of assigning a false PASS to the best available model. Whole-output Markdown fences may
+be deterministically extracted while strict-format compliance remains a separate metric.
+Every patch still requires apply, allowed-file, and focused-test gates.
+
+Reviewer routing may depend on defect type when the benchmark proves complementary
+strengths. One bounded feedback escalation is allowed before Codex takeover.
+
+### Reason
+
+Benchmark v1 exposed an evaluator false pass and a broken test command. Benchmark v2
+then showed that no installed model universally qualified for Scout, Planner, Coder, or
+Reviewer, while Qwen 14B did qualify as feedback-driven Escalation Coder. Pretending the
+highest unqualified score is a safe default would violate ADR-006.

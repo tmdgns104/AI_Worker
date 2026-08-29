@@ -1,0 +1,10 @@
+{
+  "files": [
+    "tests/test_conversation.py",
+    "tests/test_provider_adapters.py",
+    "tests/test_bridge.py",
+    "tests/test_v015_materialization.py",
+    "tests/test_v016_blocker_regressions.py"
+  ],
+  "reason": "These files directly address conversation session inventory validation, provider boundary enforcement, symlink attack simulation, and regression testing for security hardening. They collectively ensure symlinked rollouts cannot bypass read-only provider constraints."
+}

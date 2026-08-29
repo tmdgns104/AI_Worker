@@ -68,6 +68,19 @@ Local Worker에게 Repository filesystem, Git, shell 권한을 직접 주지 않
 
 새 무료 모델은 기존 모델보다 실제 결과가 좋아질 가능성이 있을 때만 추가합니다.
 
+## 실행
+
+```powershell
+python ai_worker.py doctor
+python ai_worker.py bootstrap
+python ai_worker.py benchmark
+python ai_worker.py status
+```
+
+`benchmark`는 loopback Ollama, frozen Target HEAD/file hashes, 역할별 Stable Case,
+raw output, JSONL metrics, deterministic schema/patch/test gate를 사용합니다. 모델이
+생성한 patch는 Target에 적용하지 않고 disposable clone에서만 검사합니다.
+
 ## 기록 구조
 
 ```text
@@ -79,6 +92,12 @@ AI_Worker/
 ├─ STATUS.md
 ├─ AGENTS.md
 ├─ ai_worker.py
+├─ benchmark_runner.py
+├─ benchmarks/
+│  ├─ suite_v1.json
+│  ├─ suite_v2.json
+│  └─ fixtures/
+├─ benchmark_results/   # 선별 보존하는 machine-readable benchmark Evidence
 ├─ config/
 │  └─ models.json
 ├─ docs/
@@ -86,6 +105,8 @@ AI_Worker/
 │  ├─ DEV_LOG.md
 │  └─ MODEL_BENCHMARK.md
 ├─ runs/                 # 로컬 실행 결과. 필요한 Evidence만 선별 커밋
+├─ tasks/                # 현재/완료 Task 계약과 결과
+├─ tests/                # Harness unit/regression tests
 └─ worktree/             # GitHub에 올리지 않음
 ```
 

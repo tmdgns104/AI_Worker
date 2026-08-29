@@ -1,0 +1,31 @@
+```json
+{
+  "summary": "Plan a test-only regression for the first eligible message exceeding max_characters without changing production code.",
+  "steps": [
+    "Identify the first eligible message that exceeds max_characters.",
+    "Write a test case to simulate this scenario.",
+    "Ensure the existing progress behavior is preserved.",
+    "Run the test to verify the behavior."
+  ],
+  "files_to_change": [
+    "tests/test_v016_blocker_regressions.py"
+  ],
+  "tests": [
+    "test_first_eligible_message_exceeding_max_characters"
+  ],
+  "risks": [
+    "Changing production code is not allowed.",
+    "The test might not cover all edge cases."
+  ],
+  "constraints": [
+    "No changes to production code.",
+    "Preserve existing progress behavior."
+  ],
+  "behavior_assertions": [
+    "The first eligible message exceeding max_characters is correctly identified.",
+    "The total remaining count is accurate.",
+    "The selected messages are contiguous and bounded.",
+    "The existing progress behavior is preserved."
+  ]
+}
+```

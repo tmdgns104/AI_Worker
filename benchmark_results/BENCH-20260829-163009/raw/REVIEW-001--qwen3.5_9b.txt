@@ -1,0 +1,12 @@
+{
+  "verdict": "REVISE",
+  "issues": [
+    {
+      "id": "EMPTY_CHUNK_PROGRESS_REGRESSION",
+      "severity": "High",
+      "evidence": "The patch removes `if selected and` from line 120, causing limit checks to apply to the first message. If the first eligible message exceeds `max_characters` or `max_messages`, the function returns an empty chunk. In `main_v016.py`, `next_to_cursor` remains unchanged when `analysis_messages` is empty, causing the caller to retry with the same cursor and stall progress.",
+      "advice": "Restore the `if selected and` guard to ensure at least one message is added if eligible, preserving contiguous progress. Alternatively, advance the cursor on empty chunks to prevent infinite loops."
+    }
+  ],
+  "summary": "The candidate patch removes a guard condition that skipped limit checks for the first message. This change causes the function to return an empty chunk if the first eligible message exceeds limits, which violates the contiguous progress contract by potentially stalling cursor advancement. The original logic ensured progress by adding the first message regardless of strict limit adherence on the initial iteration."
+}

@@ -1,0 +1,20 @@
+```json
+{
+  "verdict": "REVISE",
+  "issues": [
+    {
+      "id": "MISSING_REGRESS_TEST",
+      "severity": "MEDIUM",
+      "evidence": "_path_for_session method changes behavior but lacks regression tests.",
+      "advice": "Add regression tests to validate the new behavior."
+    },
+    {
+      "id": "UNRELATED_CACHE_CHANGE",
+      "severity": "LOW",
+      "evidence": "_cache_limit introduced without apparent usage in the method.",
+      "advice": "Remove or comment out the unrelated cache limit change."
+    }
+  ],
+  "summary": "Candidate patch introduces changes without proper tests and contains unrelated changes."
+}
+```

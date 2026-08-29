@@ -58,9 +58,25 @@ def original_repo() -> Path:
     return Path(PROJECT_CFG["target_repo"])
 
 
-def ollama_chat(model: str, system: str, user: str, *, num_ctx=None, temperature=None):
+def ollama_chat_detailed(
+    model: str,
+    system: str,
+    user: str,
+    *,
+    num_ctx=None,
+    temperature=None,
+    seed=None,
+    timeout_seconds=900,
+):
+    """Call the local Ollama chat endpoint and retain runtime metadata."""
     url = MODEL_CFG["ollama_url"].rstrip("/") + "/api/chat"
     limits = MODEL_CFG["limits"]
+    options = {
+        "temperature": limits["temperature"] if temperature is None else temperature,
+        "num_ctx": num_ctx or limits["num_ctx_default"],
+    }
+    if seed is not None:
+        options["seed"] = seed
     payload = {
         "model": model,
         "stream": False,
@@ -68,10 +84,7 @@ def ollama_chat(model: str, system: str, user: str, *, num_ctx=None, temperature
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        "options": {
-            "temperature": limits["temperature"] if temperature is None else temperature,
-            "num_ctx": num_ctx or limits["num_ctx_default"],
-        },
+        "options": options,
     }
     req = urllib.request.Request(
         url,
@@ -79,10 +92,34 @@ def ollama_chat(model: str, system: str, user: str, *, num_ctx=None, temperature
         headers={"Content-Type": "application/json"},
     )
     started = time.perf_counter()
-    with urllib.request.urlopen(req, timeout=900) as r:
+    with urllib.request.urlopen(req, timeout=timeout_seconds) as r:
         obj = json.loads(r.read().decode("utf-8"))
     elapsed = time.perf_counter() - started
-    return obj["message"]["content"], elapsed
+    metadata = {
+        "model": obj.get("model", model),
+        "created_at": obj.get("created_at"),
+        "done_reason": obj.get("done_reason"),
+        "total_duration_ns": obj.get("total_duration"),
+        "load_duration_ns": obj.get("load_duration"),
+        "prompt_eval_count": obj.get("prompt_eval_count"),
+        "prompt_eval_duration_ns": obj.get("prompt_eval_duration"),
+        "eval_count": obj.get("eval_count"),
+        "eval_duration_ns": obj.get("eval_duration"),
+    }
+    return obj["message"]["content"], elapsed, metadata
+
+
+def ollama_chat(model: str, system: str, user: str, *, num_ctx=None, temperature=None):
+    limits = MODEL_CFG["limits"]
+    content, elapsed, _metadata = ollama_chat_detailed(
+        model,
+        system,
+        user,
+        num_ctx=num_ctx,
+        temperature=temperature,
+        seed=limits.get("seed"),
+    )
+    return content, elapsed
 
 
 def extract_json(text: str):
@@ -275,57 +312,17 @@ def make_run_id(prefix="RUN"):
     return f"{prefix}-{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
 
-def benchmark(models=None):
-    selected = models or list(dict.fromkeys(list(MODEL_CFG["roles"].values()) + MODEL_CFG.get("experimental", [])))
-    run_id = make_run_id("BENCH")
-    out_dir = ROOT / "runs" / run_id
-    out_dir.mkdir(parents=True, exist_ok=False)
+def benchmark(models=None, *, roles=None, suite_path=None):
+    """Run the versioned role benchmark without modifying the Target worktree."""
+    from benchmark_runner import run_benchmark
 
-    system = (
-        "You are a bounded software worker. You have no tools. "
-        "Return strict JSON only with keys summary, risks, files, verdict. "
-        "files must be an array and verdict must be PASS or FAIL."
+    return run_benchmark(
+        suite_path=Path(suite_path) if suite_path else ROOT / "benchmarks" / "suite_v2.json",
+        target_repo=repo(),
+        ollama_url=MODEL_CFG["ollama_url"],
+        model_filter=models,
+        role_filter=roles,
     )
-    user = """Task: review this tiny change request.\n\n"
-"Repository facts:\n"
-"- app/main.py owns HTTP routes\n"
-"- app/runtime.py owns runtime helpers\n\n"
-"Requested change:\n"
-"Move one reusable environment parsing helper from app/main.py to app/runtime.py without changing behavior.\n\n"
-"Return a concise plan and identify both files.\n"""
-
-    results = []
-    for model in selected:
-        print(f"benchmarking {model} ...")
-        try:
-            text, elapsed = ollama_chat(model, system, user, num_ctx=4096, temperature=0.0)
-            valid_json = False
-            correct_files = False
-            verdict_ok = False
-            try:
-                obj = extract_json(text)
-                valid_json = isinstance(obj, dict)
-                files = obj.get("files", []) if isinstance(obj, dict) else []
-                correct_files = "app/main.py" in files and "app/runtime.py" in files
-                verdict_ok = obj.get("verdict") in {"PASS", "FAIL"}
-            except Exception:
-                obj = None
-            result = {
-                "model": model,
-                "seconds": round(elapsed, 2),
-                "json": valid_json,
-                "correct_files": correct_files,
-                "verdict_enum": verdict_ok,
-                "response_chars": len(text),
-            }
-            (out_dir / f"{re.sub(r'[^A-Za-z0-9_.-]+', '_', model)}.txt").write_text(text, encoding="utf-8")
-        except Exception as exc:
-            result = {"model": model, "error": str(exc)}
-        results.append(result)
-        print(json.dumps(result, ensure_ascii=False))
-
-    (out_dir / "results.json").write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"saved: {out_dir / 'results.json'}")
 
 
 def run_task(task: str):
@@ -344,7 +341,9 @@ def run_task(task: str):
         f"Select at most {limits['selected_files']} files and never invent paths."
     )
     scout_user = f"TASK:\n{task}\n\nREPOSITORY SNAPSHOT:\n{json.dumps(snap, ensure_ascii=False, indent=2)}\n\nFILES:\n" + "\n".join(files)
-    scout_raw, scout_sec = ollama_chat(roles["scout"], scout_system, scout_user, num_ctx=6144)
+    scout_raw, scout_sec = ollama_chat(
+        roles["scout"], scout_system, scout_user, num_ctx=limits["num_ctx_default"]
+    )
     (rd / "01_scout_raw.txt").write_text(scout_raw, encoding="utf-8")
 
     selected = []
@@ -485,6 +484,8 @@ def main():
 
     p_bench = sub.add_parser("benchmark")
     p_bench.add_argument("models", nargs="*")
+    p_bench.add_argument("--roles", nargs="*")
+    p_bench.add_argument("--suite")
 
     p_run = sub.add_parser("run")
     p_run.add_argument("task")
@@ -500,7 +501,7 @@ def main():
     elif ns.cmd == "status":
         status()
     elif ns.cmd == "benchmark":
-        benchmark(ns.models or None)
+        benchmark(ns.models or None, roles=ns.roles or None, suite_path=ns.suite)
     elif ns.cmd == "run":
         run_task(ns.task)
     elif ns.cmd == "revise":

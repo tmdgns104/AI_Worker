@@ -1,0 +1,364 @@
+{
+  "suite_id": "team-project-os-role-benchmark-v2",
+  "schema_version": 2,
+  "source": {
+    "repository": "team_project_os",
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "reviewed_at": "2026-08-29",
+    "provenance": "User-owned local Target repository",
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "app/conversation_providers.py": "650e3ff64901f427766d745e62fe92d32b8eb679",
+      "app/main_v016.py": "43c8b124c9862fac4e921b7a98ce42d8912dc62e",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1",
+      "tests/test_conversation_import_v016.py": "fb8adb4dc93069cf9e11932049bfbf09105a4665"
+    }
+  },
+  "runtime": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 8192,
+    "timeout_seconds": 300,
+    "repetitions": 1,
+    "retries": 0,
+    "execution": "sequential",
+    "fallback": "none"
+  },
+  "minimum_scores": {
+    "scout": 75,
+    "planner": 70,
+    "coder": 80,
+    "reviewer": 70,
+    "escalation_coder": 85
+  },
+  "candidates": {
+    "scout": [
+      "qwen3:8b",
+      "qwen3.5:9b"
+    ],
+    "planner": [
+      "qwen3:8b",
+      "qwen3.5:9b",
+      "qwen2.5-coder:14b-instruct-q3_K_S"
+    ],
+    "coder": [
+      "qwen2.5-coder:7b",
+      "qwen3.5:9b",
+      "qwen2.5-coder:14b-instruct-q3_K_S"
+    ],
+    "reviewer": [
+      "qwen3.5:9b",
+      "mistral-nemo:12b-instruct-2407-q3_K_S",
+      "qwen2.5-coder:14b-instruct-q3_K_S"
+    ],
+    "escalation_coder": [
+      "qwen3.5:9b",
+      "qwen2.5-coder:14b-instruct-q3_K_S"
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "SCOUT-001",
+      "role": "scout",
+      "task": "Add focused regression coverage proving that the first eligible conversation message is still selected when that single message exceeds the character chunk limit, so incremental import can make cursor progress. Do not change production code.",
+      "required_files": [
+        "app/conversation_import.py",
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "allowed_files": [
+        "app/conversation_import.py",
+        "app/conversation_providers.py",
+        "app/main_v016.py",
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "max_selected_files": 5,
+      "required_file_groups": [
+        [
+          "app/conversation_import.py"
+        ],
+        [
+          "tests/test_v016_blocker_regressions.py",
+          "tests/test_conversation_import_v016.py"
+        ]
+      ]
+    },
+    {
+      "case_id": "SCOUT-002",
+      "role": "scout",
+      "task": "Add a test-only security regression proving a symlinked rollout outside the Codex sessions root cannot enter the native conversation session inventory. Preserve the read-only provider boundary.",
+      "required_files": [
+        "app/conversation_providers.py",
+        "tests/test_conversation_import_v016.py"
+      ],
+      "allowed_files": [
+        "app/conversation_providers.py",
+        "tests/test_conversation_import_v016.py",
+        "tests/test_v016_blocker_regressions.py",
+        "tasks/TASK-002-native-conversation-import.md"
+      ],
+      "max_selected_files": 5,
+      "required_file_groups": [
+        [
+          "app/conversation_providers.py"
+        ],
+        [
+          "tests/test_conversation_import_v016.py",
+          "tests/test_v016_blocker_regressions.py"
+        ]
+      ]
+    },
+    {
+      "case_id": "PLAN-001",
+      "role": "planner",
+      "task": "Plan a test-only regression for the first eligible message exceeding max_characters. The implementation must preserve the existing progress behavior and must not change production code.",
+      "context": [
+        {
+          "path": "app/conversation_import.py",
+          "start_line": 97,
+          "end_line": 128
+        },
+        {
+          "path": "app/main_v016.py",
+          "start_line": 488,
+          "end_line": 512
+        },
+        {
+          "path": "tests/test_v016_blocker_regressions.py",
+          "start_line": 55,
+          "end_line": 88
+        }
+      ],
+      "required_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "allowed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "concept_groups": [
+        [
+          "first",
+          "oversized"
+        ],
+        [
+          "progress",
+          "cursor"
+        ],
+        [
+          "test-only",
+          "production code"
+        ],
+        [
+          "focused",
+          "unittest"
+        ]
+      ],
+      "semantic_groups": [
+        [
+          "select the first",
+          "first message is selected",
+          "selected cursor 1",
+          "selected=[1]"
+        ],
+        [
+          "total remains 1",
+          "total is 1",
+          "total=1"
+        ]
+      ],
+      "forbidden_phrases": [
+        "selected=[]",
+        "selected = []",
+        "returns empty",
+        "exclude the oversized",
+        "excludes first",
+        "is rejected"
+      ]
+    },
+    {
+      "case_id": "PLAN-002",
+      "role": "planner",
+      "task": "Plan a test-only security regression for a symlinked JSONL rollout that resolves outside the configured Codex sessions directory. Preserve the read-only provider and do not change production code.",
+      "context": [
+        {
+          "path": "app/conversation_providers.py",
+          "start_line": 189,
+          "end_line": 234
+        },
+        {
+          "path": "tests/test_conversation_import_v016.py",
+          "start_line": 133,
+          "end_line": 166
+        }
+      ],
+      "required_files": [
+        "tests/test_conversation_import_v016.py"
+      ],
+      "allowed_files": [
+        "tests/test_conversation_import_v016.py"
+      ],
+      "concept_groups": [
+        [
+          "symlink",
+          "resolve"
+        ],
+        [
+          "outside",
+          "root"
+        ],
+        [
+          "test-only",
+          "production code"
+        ],
+        [
+          "skip",
+          "inventory"
+        ]
+      ],
+      "semantic_groups": [
+        [
+          "symlink",
+          "resolved path"
+        ],
+        [
+          "excluded",
+          "ignored",
+          "skip"
+        ],
+        [
+          "outside",
+          "root"
+        ]
+      ],
+      "forbidden_phrases": []
+    },
+    {
+      "case_id": "CODE-001",
+      "role": "coder",
+      "task": "Add one focused unittest named test_first_oversized_message_is_selected_for_progress. It must call select_message_chunk with one eligible message whose content is longer than max_characters and assert that the message is selected and total remains correct. Change tests/test_v016_blocker_regressions.py only. Do not modify production code and do not claim tests were run.",
+      "context": [
+        {
+          "path": "tests/test_v016_blocker_regressions.py",
+          "start_line": 1,
+          "end_line": 90
+        },
+        {
+          "path": "app/conversation_import.py",
+          "start_line": 97,
+          "end_line": 128
+        }
+      ],
+      "allowed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "required_patch_terms": [
+        "test_first_oversized_message_is_selected_for_progress",
+        "select_message_chunk",
+        "max_characters",
+        "assertEqual"
+      ],
+      "test_command": [
+        "python",
+        "-m",
+        "unittest",
+        "tests.test_v016_blocker_regressions.V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "-v"
+      ],
+      "max_added_lines": 35
+    },
+    {
+      "case_id": "REVIEW-001",
+      "role": "reviewer",
+      "task": "Review a candidate change to conversation chunk selection against the contiguous progress contract.",
+      "context": [
+        {
+          "path": "app/conversation_import.py",
+          "start_line": 97,
+          "end_line": 128
+        },
+        {
+          "path": "app/main_v016.py",
+          "start_line": 495,
+          "end_line": 512
+        }
+      ],
+      "candidate_patch": "benchmarks/fixtures/review_001_bad.patch",
+      "expected_verdict": "REVISE",
+      "gold_issues": [
+        {
+          "id": "EMPTY_CHUNK_PROGRESS_REGRESSION",
+          "severity": "high"
+        },
+        {
+          "id": "MISSING_REGRESSION_TEST",
+          "severity": "medium"
+        }
+      ],
+      "minimum_issue_recall": 1.0
+    },
+    {
+      "case_id": "REVIEW-002",
+      "role": "reviewer",
+      "task": "Review a candidate change to native Codex session lookup against the read-only inventory and filesystem safety boundary.",
+      "context": [
+        {
+          "path": "app/conversation_providers.py",
+          "start_line": 185,
+          "end_line": 234
+        }
+      ],
+      "candidate_patch": "benchmarks/fixtures/review_002_bad.patch",
+      "expected_verdict": "REJECT",
+      "gold_issues": [
+        {
+          "id": "ARBITRARY_FILE_READ",
+          "severity": "critical"
+        },
+        {
+          "id": "UNRELATED_CACHE_CHANGE",
+          "severity": "low"
+        },
+        {
+          "id": "MISSING_SECURITY_TEST",
+          "severity": "medium"
+        }
+      ],
+      "minimum_issue_recall": 0.67
+    },
+    {
+      "case_id": "ESC-001",
+      "role": "escalation_coder",
+      "task": "Revise the failed test-only patch using the supervisor feedback. Output a complete replacement unified diff and change no production file.",
+      "context": [
+        {
+          "path": "tests/test_v016_blocker_regressions.py",
+          "start_line": 1,
+          "end_line": 90
+        },
+        {
+          "path": "app/conversation_import.py",
+          "start_line": 97,
+          "end_line": 128
+        }
+      ],
+      "old_patch": "benchmarks/fixtures/esc_001_failed.patch",
+      "feedback": "The old test encodes the wrong behavior and would allow an empty chunk to stall cursor progress. Keep the test-only scope, rename the test to test_first_oversized_message_is_selected_for_progress, and assert that the first eligible oversized message is selected while total remains 1.",
+      "allowed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "required_patch_terms": [
+        "test_first_oversized_message_is_selected_for_progress",
+        "select_message_chunk",
+        "max_characters",
+        "assertEqual"
+      ],
+      "test_command": [
+        "python",
+        "-m",
+        "unittest",
+        "tests.test_v016_blocker_regressions.V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "-v"
+      ],
+      "max_added_lines": 35
+    }
+  ]
+}

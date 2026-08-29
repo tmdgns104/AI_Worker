@@ -1,0 +1,28 @@
+{
+  "summary": "Security regression test plan to verify that symlinks resolving outside the Codex sessions directory are safely ignored during session enumeration without modifying production code.",
+  "steps": [
+    "Create a temporary directory structure mimicking codex_home with 'sessions' and 'archived_sessions' subdirectories using tempfile.TemporaryDirectory.",
+    "Place a valid JSONL file inside 'sessions' to ensure baseline functionality works.",
+    "Create a symlink inside 'sessions' that points to a file located outside the temporary root (e.g., /etc/passwd or a temp file in /tmp).",
+    "Instantiate CodexConversationProvider with the temporary directory path using the existing fixture pattern.",
+    "Invoke list_sessions() on the provider instance.",
+    "Assert that the session count reflects only valid internal files, excluding the symlinked external file.",
+    "Verify that no OSError or ValueError is propagated to the caller, confirming graceful handling of invalid symlinks."
+  ],
+  "files_to_change": [
+    "tests/test_conversation_import_v016.py"
+  ],
+  "tests": [
+    "test_symlink_outside_directory_is_ignored"
+  ],
+  "risks": [
+    "False negative if symlink target is within the same filesystem mount but outside logical path",
+    "Performance overhead introduced by resolving symlinks on every file scan",
+    "Test environment may not reflect production symlink resolution behavior across different OS versions"
+  ],
+  "constraints": [
+    "Provider implementation must remain read-only",
+    "No changes allowed to app/conversation_providers.py",
+    "Must use existing CodexFixture and TemporaryDirectory patterns from test_conversation_import_v016.py"
+  ]
+}

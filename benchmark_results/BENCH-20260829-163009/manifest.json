@@ -1,0 +1,69 @@
+{
+  "run_id": "BENCH-20260829-163009",
+  "suite_id": "team-project-os-role-benchmark-v2",
+  "started_at": "2026-08-29T07:30:09.237489+00:00",
+  "ollama_url": "http://127.0.0.1:11434",
+  "target_before": {
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "clean": true,
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "app/conversation_providers.py": "650e3ff64901f427766d745e62fe92d32b8eb679",
+      "app/main_v016.py": "43c8b124c9862fac4e921b7a98ce42d8912dc62e",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1",
+      "tests/test_conversation_import_v016.py": "fb8adb4dc93069cf9e11932049bfbf09105a4665"
+    }
+  },
+  "runtime": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 8192,
+    "timeout_seconds": 300,
+    "repetitions": 1,
+    "retries": 0,
+    "execution": "sequential",
+    "fallback": "none"
+  },
+  "models": {
+    "qwen3:8b": {
+      "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+      "size": 5225388164,
+      "parameter_size": "8.2B",
+      "quantization_level": "Q4_K_M",
+      "format": "gguf",
+      "family": "qwen3"
+    },
+    "qwen3.5:9b": {
+      "digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+      "size": 6594474711,
+      "parameter_size": "9.7B",
+      "quantization_level": "Q4_K_M",
+      "format": "gguf",
+      "family": "qwen35"
+    },
+    "qwen2.5-coder:14b-instruct-q3_K_S": {
+      "digest": "ff7e2b2086f712b6825d425ef5258234de6814b69cf4cf8b52cebcfef5a5396a",
+      "size": 6659609738,
+      "parameter_size": "14.8B",
+      "quantization_level": "Q3_K_S",
+      "format": "gguf",
+      "family": "qwen2"
+    },
+    "qwen2.5-coder:7b": {
+      "digest": "dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364",
+      "size": 4683087561,
+      "parameter_size": "7.6B",
+      "quantization_level": "Q4_K_M",
+      "format": "gguf",
+      "family": "qwen2"
+    },
+    "mistral-nemo:12b-instruct-2407-q3_K_S": {
+      "digest": "5bba7a13afefd3f2f58abe383c4f775d9238e0b4f2c24e56b72b33290fef719d",
+      "size": 5534238669,
+      "parameter_size": "12.2B",
+      "quantization_level": "Q3_K_S",
+      "format": "gguf",
+      "family": "llama"
+    }
+  }
+}

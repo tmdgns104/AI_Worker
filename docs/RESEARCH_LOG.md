@@ -101,3 +101,77 @@ readiness and repository isolation are now proven on the actual host.
 ### Next Experiment
 
 Version and run a role-based model benchmark with real schema and patch hard gates.
+
+---
+
+## 2026-08-29 — R-003 Role Benchmark v1 and Evaluator Failure
+
+### Hypothesis
+
+A fixed Target-grounded suite can distinguish role quality using schema, file recall,
+patch apply, focused tests, and known review defects.
+
+### Conditions
+
+Eight Stable Cases, 21 sequential slots, loopback Ollama, temperature 0, seed 42,
+8192 context, retry 0, and clean Target `3c05219`. Raw output and JSONL were retained.
+
+### Result
+
+The model execution completed except for one qwen3:8b Reviewer timeout. However, v1
+itself failed validation: Planner keyword scoring passed semantically wrong empty-chunk
+plans, Scout Gold rejected a valid alternate test location, and the focused test command
+could not resolve the Target's test-module import.
+
+### Unexpected Finding
+
+The most dangerous false PASS came from the evaluator rather than the Local Model.
+Stronger output schema compliance did not protect against incorrect behavior semantics.
+
+### Conclusion
+
+v1 is diagnostic Evidence only. Preserve it, create v2 instead of rewriting history,
+and add multiple-valid-file Gold, explicit behavior assertions/forbidden outcomes,
+whole-output fence normalization, exact new-test discovery, and timeout measurement.
+
+---
+
+## 2026-08-29 — R-004 Role Benchmark v2
+
+### Hypothesis
+
+The corrected evaluator will reject semantic false passes while still recovering safe
+content from common Markdown fence format failures.
+
+### Conditions
+
+Same Target hashes and generation parameters as v1; 300-second timeout; 21 slots across
+five installed models selected by plausible role. Patch candidates were applied only in
+disposable clones. An empty disposable `tests/__init__.py` enabled exact test discovery
+without changing the Target.
+
+### Result
+
+- All 21 requests completed; summed request latency 714.23 seconds.
+- Target before/after invariants: PASS.
+- Planner false behavior was correctly rejected in PLAN-001.
+- No one-shot Coder qualified.
+- Mistral passed ordinary regression review; Qwen 14B passed security review.
+- Qwen 14B Escalation passed all gates at 95 points in 24.50 seconds.
+
+### Hardware Observation
+
+Ollama reported the 14B Q3 model at 8.4 GB runtime size with `26%/74% CPU/GPU` and
+8192 context after execution. It is practical as sequential escalation, not evidence for
+parallel residency or a universal default.
+
+### Conclusion
+
+The useful pattern is not “largest model wins.” A fast candidate plus deterministic
+rejection and one explicit-feedback 14B escalation succeeded where one-shot 14B coding
+failed. Reviewer specialization also outperformed a universal reviewer assumption.
+
+### Next Experiment
+
+Run one small real Target change E2E and measure first-candidate acceptance, escalation,
+Codex correction, focused/regression time, and final diff quality.

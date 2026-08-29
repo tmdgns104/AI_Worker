@@ -1,0 +1,12 @@
+```json
+{
+  "files": [
+    "app/conversation.py",
+    "app/conversation_import.py",
+    "app/conversation_providers.py",
+    "tests/test_conversation.py",
+    "tests/test_conversation_import_v016.py"
+  ],
+  "reason": "These files are relevant to the task of proving that the first eligible conversation message is still selected when that single message exceeds the character chunk limit, allowing incremental import to make cursor progress."
+}
+```

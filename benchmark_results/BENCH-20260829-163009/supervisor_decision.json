@@ -1,0 +1,50 @@
+{
+  "decision_version": 1,
+  "run_id": "BENCH-20260829-163009",
+  "suite_id": "team-project-os-role-benchmark-v2",
+  "decision": "CONDITIONAL_ROUTING_WITH_CODEX_TAKEOVER",
+  "routing": {
+    "scout": {
+      "primary": "qwen3:8b",
+      "fallback": "qwen3.5:9b",
+      "qualification": "CONDITIONAL",
+      "evidence": "qwen3:8b passed SCOUT-001 but failed SCOUT-002; 1/2 hard gates, mean 64.38, 20.89s."
+    },
+    "planner": {
+      "primary": "qwen3:8b",
+      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "qualification": "CONDITIONAL",
+      "evidence": "All candidates passed PLAN-002 and failed PLAN-001 semantic Gold. qwen3:8b keeps Scout-to-Planner model locality and strict JSON but requires semantic validation."
+    },
+    "coder": {
+      "primary": "qwen2.5-coder:7b",
+      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "qualification": "UNQUALIFIED_FAST_ATTEMPT",
+      "evidence": "No one-shot Coder passed apply/test. 7B was fastest at 12.26s and remains candidate-only before deterministic rejection or escalation."
+    },
+    "reviewer": {
+      "primary": "mistral-nemo:12b-instruct-2407-q3_K_S",
+      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "security_model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "qualification": "CONDITIONAL_SPLIT",
+      "evidence": "Mistral passed regression REVIEW-001 at 80/15.85s; 14B passed security REVIEW-002 at 86.25/24.89s. No model passed both."
+    },
+    "escalation_coder": {
+      "primary": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "fallback": null,
+      "qualification": "QUALIFIED_ONE_CASE",
+      "evidence": "ESC-001 95 points, apply PASS, exact focused test PASS, 24.50s after explicit supervisor feedback."
+    }
+  },
+  "takeover_conditions": [
+    "Scout required concepts remain uncovered after one deterministic context expansion.",
+    "Planner behavior assertions conflict with source or Gold invariants.",
+    "Coder and one feedback-driven Escalation candidate fail apply or focused tests.",
+    "Reviewer misses a critical issue or reviewer defect-type routing is uncertain."
+  ],
+  "limitations": [
+    "Only Escalation Coder achieved universal qualification for its tested role case.",
+    "Scout, Planner, Coder, and Reviewer routing is conditional and must not bypass hard gates.",
+    "Each Coder and Escalation role currently has one development case; more cases are needed before broad claims."
+  ]
+}

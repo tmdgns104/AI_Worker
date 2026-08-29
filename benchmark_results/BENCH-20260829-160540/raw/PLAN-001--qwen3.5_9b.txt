@@ -1,0 +1,34 @@
+{
+  "summary": "Add regression test for first eligible message exceeding max_characters limit in select_message_chunk, verifying correct chunking behavior without modifying production code.",
+  "steps": [
+    "Create new test method test_first_message_exceeds_max_characters in tests/test_v016_blocker_regressions.py",
+    "Test scenario where first eligible message length exceeds max_characters threshold",
+    "Verify selected messages exclude the oversized first message",
+    "Confirm total_unimported count reflects all eligible messages including oversized one",
+    "Ensure next_to_cursor points to correct position after chunking",
+    "Add test fixture for ConversationMessage with configurable content length"
+  ],
+  "files_to_change": [
+    "tests/test_v016_blocker_regressions.py"
+  ],
+  "tests": [
+    {
+      "name": "test_first_message_exceeds_max_characters",
+      "description": "Verify chunking excludes first message when it exceeds max_characters limit",
+      "input": "messages with first message > max_characters, after_cursor=0, max_messages=10, max_characters=50",
+      "expected_behavior": "selected=[], total=len(eligible), next_to_cursor=-1 or first cursor"
+    }
+  ],
+  "risks": [
+    "Test may fail if existing select_message_chunk behavior changes unexpectedly",
+    "Need to ensure test isolation from other regression tests",
+    "Fixture setup must not interfere with existing test fixtures"
+  ],
+  "constraints": [
+    "No production code modifications allowed",
+    "Must preserve existing progress behavior (total_unimported, next_to_cursor)",
+    "Test-only implementation in test files only",
+    "Use existing ConversationMessage fixture pattern from existing tests",
+    "Keep test method within same file structure as existing tests"
+  ]
+}

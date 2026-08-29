@@ -1,0 +1,10 @@
+{
+  "files": [
+    "tests/test_conversation_import_v016.py",
+    "app/conversation.py",
+    "app/live_state.py",
+    "app/conversation_import.py",
+    "app/live_state_v015.py"
+  ],
+  "reason": "These files are critical for testing the regression scenario where a single conversation message exceeds the character chunk limit during incremental import. The test file (tests/test_conversation_import_v016.py) will be extended to verify the first eligible message remains selected. The conversation module (app/conversation.py) and live state module (app/live_state.py) define conversation state behavior. The conversation import module (app/conversation_import.py) handles incremental import processing. The live state version 015 (app/live_state_v015.py) is the current production implementation of the live state being tested."
+}

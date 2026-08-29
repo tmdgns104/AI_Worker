@@ -1,0 +1,30 @@
+```json
+{
+  "summary": "Plan a test-only security regression for a symlinked JSONL rollout that resolves outside the configured Codex sessions directory.",
+  "steps": [
+    "Identify the relevant code in `app/conversation_providers.py` that handles symlink resolution and directory traversal.",
+    "Create a test case in `tests/test_conversation_import_v016.py` to simulate a symlink that resolves outside the configured Codex sessions directory.",
+    "Ensure the test case verifies that the symlink is ignored and does not lead to arbitrary local-file read access.",
+    "Run the test case to confirm the security regression.",
+    "Document the test case and the expected behavior."
+  ],
+  "files_to_change": [
+    "tests/test_conversation_import_v016.py"
+  ],
+  "tests": [
+    "test_symlink_outside_codex_directory_is_ignored"
+  ],
+  "risks": [
+    "Ensure that the test does not inadvertently modify or delete any production data.",
+    "Verify that the test does not introduce any new security vulnerabilities."
+  ],
+  "constraints": [
+    "Do not change production code.",
+    "Preserve the read-only provider."
+  ],
+  "behavior_assertions": [
+    "A symlink that resolves outside the configured Codex sessions directory should be ignored.",
+    "No arbitrary local-file read access should be possible through the symlink."
+  ]
+}
+```

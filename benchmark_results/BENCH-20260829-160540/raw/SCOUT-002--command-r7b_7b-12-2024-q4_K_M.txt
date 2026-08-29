@@ -1,0 +1,12 @@
+```json
+{
+  "files": [
+    ".env.example",
+    "app/conversation_import.py",
+    "app/conversation_providers.py",
+    "app/main.py",
+    "app/main_v015.py"
+  ],
+  "reason": "These files are relevant to the conversation session inventory and symlinked rollout, and are located outside the Codex sessions root."
+}
+```

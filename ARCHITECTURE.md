@@ -96,16 +96,21 @@ Codex
 
 ## Model Routing
 
-초기 역할은 Benchmark 전 임시값이다.
+`team-project-os-role-benchmark-v2` 결과에 따른 초기 운영 routing:
 
-- Scout: `qwen3:4b`
-- Planner: `qwen3:8b`
-- Coder: `qwen2.5-coder:7b`
-- Reviewer: `qwen3.5:9b`
-- Escalation Coder: `qwen2.5-coder:14b-instruct-q3_K_S`
-- Alternate Reviewer: `mistral-nemo:12b-instruct-2407-q3_K_S`
+- Scout: `qwen3:8b`; missing required concepts trigger deterministic context expansion,
+  then `qwen3.5:9b` fallback or Codex.
+- Planner: `qwen3:8b`; schema/file selection never substitutes for behavior-semantic
+  validation. 14B is the bounded fallback.
+- Coder: `qwen2.5-coder:7b` is only a fast candidate generator. It did not qualify on
+  CODE-001 and therefore cannot bypass patch/apply/test gates.
+- Reviewer: Mistral Nemo for ordinary regression review; Qwen 14B for filesystem and
+  security review. No single tested model passed both reviewer cases.
+- Escalation Coder: Qwen 14B after explicit supervisor feedback; qualified on ESC-001.
 
-Model Router는 이름에 의존하지 않고 역할별 Benchmark 결과를 기준으로 설정 가능해야 한다.
+Routing is qualification-aware rather than model-name authoritative. Conditional or
+unqualified routes remain useful only because deterministic validation rejects unsafe
+outputs and bounded escalation ends in Codex takeover.
 
 ## Context Policy
 

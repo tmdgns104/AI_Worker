@@ -1,0 +1,12 @@
+diff --git a/app/conversation_import.py b/app/conversation_import.py
+--- a/app/conversation_import.py
++++ b/app/conversation_import.py
+@@ -115,7 +115,7 @@ def select_message_chunk(
+     characters = 0
+     for message in eligible:
+         safe_length = len(redact_secrets(message.content)[:40_000])
+-        if selected and (
++        if (
+             len(selected) >= max_messages or characters + safe_length > max_characters
+         ):
+             break

@@ -1,0 +1,24 @@
+{
+  "summary": "Test regression for first eligible message exceeding max_characters without altering production code",
+  "steps": [
+    "Create test case in test_v016_blocker_regressions.py with messages where first eligible message's redacted content exceeds max_characters",
+    "Verify select_message_chunk returns empty selected list when first message exceeds max_characters",
+    "Confirm total_unimported reflects correct count of eligible messages",
+    "Ensure test preserves existing progress behavior without modifying production code"
+  ],
+  "files_to_change": ["tests/test_v016_blocker_regressions.py"],
+  "tests": [
+    "Test case where first eligible message's redacted content length exceeds max_characters",
+    "Verification that selected messages list remains empty under character limit",
+    "Validation of total_unimported count with character-limited scenario"
+  ],
+  "risks": [
+    "Test may not accurately simulate redaction length calculations",
+    "Potential false negatives if max_characters calculation differs from production"
+  ],
+  "constraints": [
+    "Must not modify production code in app/conversation_import.py",
+    "Test must preserve existing progress behavior implementation",
+    "Test must be self-contained within existing test suite"
+  ]
+}

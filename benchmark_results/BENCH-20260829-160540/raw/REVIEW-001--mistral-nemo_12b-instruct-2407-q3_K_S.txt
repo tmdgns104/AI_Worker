@@ -1,0 +1,20 @@
+```json
+{
+  "verdict": "REVISE",
+  "issues": [
+    {
+      "id": "EMPTY_CHUNK_PROGRESS_REGRESSION",
+      "severity": "MEDIUM",
+      "evidence": "The change removes the check if selected list is empty before breaking the loop.",
+      "advice": "Revert the change and ensure the loop breaks correctly when selected list is empty."
+    },
+    {
+      "id": "MISSING_REGRESSION_TEST",
+      "severity": "LOW",
+      "evidence": "No regression tests are mentioned for the behavior change.",
+      "advice": "Add regression tests to validate the correctness of the chunk selection logic."
+    }
+  ],
+  "summary": "The candidate patch introduces a regression issue and lacks focused regression coverage."
+}
+```

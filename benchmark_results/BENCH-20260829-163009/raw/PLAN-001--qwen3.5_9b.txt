@@ -1,0 +1,40 @@
+{
+  "summary": "Regression test for select_message_chunk when first eligible message exceeds max_characters limit. Verifies contiguous selection stops before exceeding character budget while preserving total_unimported count and progress behavior.",
+  "steps": [
+    "Add new test case to tests/test_v016_blocker_regressions.py",
+    "Create test scenario where first eligible message has safe_length > max_characters",
+    "Verify selected list is empty when first message exceeds limit",
+    "Verify total_unimported still counts all eligible messages including oversized one",
+    "Verify remaining_after_chunk and has_more are calculated correctly",
+    "Run existing tests to ensure no regression in current behavior"
+  ],
+  "files_to_change": [
+    "tests/test_v016_blocker_regressions.py"
+  ],
+  "tests": [
+    "def test_first_message_exceeds_max_characters():\n    messages = [\n        ConversationMessage(cursor=2, 'user', 'x' * 50_001, ''),\n        ConversationMessage(cursor=3, 'user', 'x' * 10, ''),\n        ConversationMessage(cursor=4, 'user', 'x' * 10, ''),\n    ]\n    selected, total = select_message_chunk(\n        messages,\n        after_cursor=1,\n        max_messages=10,\n        max_characters=20,\n    )\n    self.assertEqual(len(selected), 0)\n    self.assertEqual(total, 3)",
+    "def test_second_message_exceeds_max_characters():\n    messages = [\n        ConversationMessage(cursor=2, 'user', 'x' * 10, ''),\n        ConversationMessage(cursor=3, 'user', 'x' * 50_001, ''),\n        ConversationMessage(cursor=4, 'user', 'x' * 10, ''),\n    ]\n    selected, total = select_message_chunk(\n        messages,\n        after_cursor=1,\n        max_messages=10,\n        max_characters=20,\n    )\n    self.assertEqual([item.cursor for item in selected], [2])\n    self.assertEqual(total, 3)",
+    "def test_progress_preserved_when_message_exceeds_limit():\n    messages = [\n        ConversationMessage(cursor=2, 'user', 'x' * 10, ''),\n        ConversationMessage(cursor=3, 'user', 'x' * 50_001, ''),\n        ConversationMessage(cursor=4, 'user', 'x' * 10, ''),\n    ]\n    selected, total = select_message_chunk(\n        messages,\n        after_cursor=1,\n        max_messages=10,\n        max_characters=20,\n    )\n    self.assertEqual(len(selected), 1)\n    self.assertEqual(total, 3)\n    # Verify next_to_cursor points to last selected message\n    self.assertEqual(selected[-1].cursor, 2)"
+  ],
+  "risks": [
+    "Existing tests may fail if they assume first message always fits within limit",
+    "Edge case where all messages exceed max_characters needs verification",
+    "Empty selected list when first message exceeds limit could break downstream consumers expecting at least one message"
+  ],
+  "constraints": [
+    "No production code changes allowed",
+    "Must preserve existing progress behavior (total_unimported, remaining_after_chunk)",
+    "Test-only implementation in test files only",
+    "Must not modify select_message_chunk function logic",
+    "Must maintain backward compatibility with existing callers"
+  ],
+  "behavior_assertions": [
+    "When first eligible message exceeds max_characters, selected list must be empty",
+    "total_unimported must count all eligible messages regardless of size",
+    "remaining_after_chunk must equal total_unimported when no messages selected",
+    "has_more must be True when remaining_after_chunk > 0",
+    "next_to_cursor must point to last selected message cursor or after_cursor if none selected",
+    "Existing test_message_chunk_is_contiguous_and_bounded must continue passing",
+    "Progress behavior (cursor tracking) must remain unchanged"
+  ]
+}

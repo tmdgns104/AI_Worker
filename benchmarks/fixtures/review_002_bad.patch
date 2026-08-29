@@ -1,0 +1,13 @@
+diff --git a/app/conversation_providers.py b/app/conversation_providers.py
+--- a/app/conversation_providers.py
++++ b/app/conversation_providers.py
+@@ -225,5 +225,9 @@ class CodexConversationProvider(ConversationProvider):
+ 
+     def _path_for_session(self, session_id: str) -> tuple[Path, bool]:
++        self._cache_limit = 10_000
++        direct_path = Path(session_id)
++        if direct_path.is_file():
++            return direct_path, False
+         normalized = str(session_id or "").strip().lower()
+         if not SESSION_ID_PATTERN.fullmatch(normalized):
+             raise ValueError("Invalid Codex session ID")

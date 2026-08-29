@@ -1,0 +1,12 @@
+{
+  "verdict": "REJECT",
+  "issues": [
+    {
+      "id": "ARBITRARY_FILE_READ",
+      "severity": "high",
+      "evidence": "The patch adds `direct_path = Path(session_id)` and returns it immediately if `is_file()` is true. This bypasses the existing inventory validation in `_session_files` (lines 191-208) which restricts access to `self.codex_home` directories and checks for symlinks escaping the root.",
+      "advice": "Remove the direct path check. Ensure all session lookups are restricted to files within `self.codex_home` and validate paths using the existing symlink/relative-to-root logic to prevent arbitrary file reads."
+    }
+  ],
+  "summary": "The candidate change introduces a critical security vulnerability by allowing arbitrary file reads outside the intended Codex store directory. It bypasses the filesystem safety boundary established in `_session_files` and `_path_for_session`, enabling potential path traversal attacks if an attacker can control the `session_id` input."
+}

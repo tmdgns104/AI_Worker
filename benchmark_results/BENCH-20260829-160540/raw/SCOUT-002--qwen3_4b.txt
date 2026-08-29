@@ -1,0 +1,6 @@
+{
+  "files": [
+    "tests/test_symlinked_rollout_security.py"
+  ],
+  "reason": "Added test to prove that symlinked rollouts outside Codex sessions root cannot enter native conversation session inventory, preserving read-only provider boundary."
+}

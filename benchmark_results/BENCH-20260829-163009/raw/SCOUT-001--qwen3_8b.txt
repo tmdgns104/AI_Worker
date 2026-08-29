@@ -1,0 +1,7 @@
+{
+  "files": [
+    "tests/test_conversation_import_v016.py",
+    "app/conversation_import.py"
+  ],
+  "reason": "The test file (test_conversation_import_v016.py) needs regression coverage to verify message selection logic, and the production code (conversation_import.py) implements the import logic. These files directly relate to ensuring the first eligible message is selected when a single message exceeds chunk limits."
+}

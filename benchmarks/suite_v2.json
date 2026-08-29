@@ -1,0 +1,80 @@
+{
+  "suite_id": "team-project-os-role-benchmark-v2",
+  "schema_version": 2,
+  "extends": "suite_v1.json",
+  "runtime": {
+    "timeout_seconds": 300
+  },
+  "candidates": {
+    "scout": [
+      "qwen3:8b",
+      "qwen3.5:9b"
+    ],
+    "planner": [
+      "qwen3:8b",
+      "qwen3.5:9b",
+      "qwen2.5-coder:14b-instruct-q3_K_S"
+    ],
+    "reviewer": [
+      "qwen3.5:9b",
+      "mistral-nemo:12b-instruct-2407-q3_K_S",
+      "qwen2.5-coder:14b-instruct-q3_K_S"
+    ]
+  },
+  "case_overrides": {
+    "SCOUT-001": {
+      "required_file_groups": [
+        ["app/conversation_import.py"],
+        [
+          "tests/test_v016_blocker_regressions.py",
+          "tests/test_conversation_import_v016.py"
+        ]
+      ]
+    },
+    "SCOUT-002": {
+      "required_file_groups": [
+        ["app/conversation_providers.py"],
+        [
+          "tests/test_conversation_import_v016.py",
+          "tests/test_v016_blocker_regressions.py"
+        ]
+      ]
+    },
+    "PLAN-001": {
+      "semantic_groups": [
+        ["select the first", "first message is selected", "selected cursor 1", "selected=[1]"],
+        ["total remains 1", "total is 1", "total=1"]
+      ],
+      "forbidden_phrases": [
+        "selected=[]",
+        "selected = []",
+        "returns empty",
+        "exclude the oversized",
+        "excludes first",
+        "is rejected"
+      ]
+    },
+    "PLAN-002": {
+      "semantic_groups": [
+        ["symlink", "resolved path"],
+        ["excluded", "ignored", "skip"],
+        ["outside", "root"]
+      ],
+      "forbidden_phrases": []
+    },
+    "CODE-001": {
+      "test_command": [
+        "python", "-m", "unittest",
+        "tests.test_v016_blocker_regressions.V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "-v"
+      ]
+    },
+    "ESC-001": {
+      "test_command": [
+        "python", "-m", "unittest",
+        "tests.test_v016_blocker_regressions.V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "-v"
+      ]
+    }
+  }
+}

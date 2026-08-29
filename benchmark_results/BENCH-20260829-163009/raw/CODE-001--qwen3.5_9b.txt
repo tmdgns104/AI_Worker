@@ -1,0 +1,21 @@
+---
+tests/test_v016_blocker_regressions.py | +12
++++ b/tests/test_v016_blocker_regressions.py
+@@ -83,6 +83,18 @@ class V016BlockerUnitTests(unittest.TestCase):
+         self.assertEqual(total, 5)
+ 
++    def test_first_oversized_message_is_selected_for_progress(self):
++        messages = [
++            ConversationMessage(cursor=2, "user", "x" * 5000, ""),
++        ]
++
++        selected, total = select_message_chunk(
++            messages,
++            after_cursor=1,
++            max_messages=10,
++            max_characters=100,
++        )
++        self.assertEqual(len(selected), 1)
++        self.assertEqual(total, 1)
++
+     def test_distiller_uses_disposable_tool_disabled_environment_and_schema(self):

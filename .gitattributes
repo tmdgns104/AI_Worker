@@ -1,0 +1,5 @@
+# Preserve model output byte-for-byte; formatting compliance is scored separately.
+benchmark_results/**/raw/*.txt -whitespace
+
+# Unified-diff fixtures require a single space to represent blank context lines.
+benchmarks/fixtures/*.patch -whitespace
