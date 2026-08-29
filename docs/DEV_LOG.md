@@ -36,3 +36,44 @@ GitHub `tmdgns104/AI_Worker`는 다음을 함께 보관한다.
 
 GitHub initial files created.
 Local Windows checkout and runtime verification remain pending.
+
+---
+
+## 2026-08-29 — D-002 Windows Doctor Readiness
+
+### Task
+
+Make the V0.1 environment doctor execute normal Windows command shims and return a
+deterministic readiness verdict before Target worktree bootstrap.
+
+### Changed
+
+- Added Windows `.cmd`/`.bat` subprocess preparation with explicit argument quoting.
+- Preserved list-form execution for native programs and existing string-command behavior.
+- Added Target Git validation, Ollama connectivity/model parsing, configured-role model
+  checks, and a final doctor PASS/FAIL verdict.
+- Added five unit tests and a durable Task contract.
+- Created the isolated Target worktree on `ai/team-project-os-improvement`.
+
+### Reason
+
+The initial doctor crashed on the installed npm `codex.CMD` shim with `WinError 2`, so
+the documented bootstrap path could not complete on the actual Windows host.
+
+### Verification
+
+- `python -m unittest discover -s tests -v` — 5/5 PASS
+- `python -m py_compile ai_worker.py` — PASS
+- `python ai_worker.py doctor` — PASS
+- `git diff --check` — PASS
+- Worktree branch/HEAD/clean status — PASS
+- Original Target status checked; pre-existing untracked ZIP unchanged
+
+### Result
+
+Environment Doctor and Target worktree bootstrap are operational. Architecture is
+unchanged. Commit: `fix Windows doctor readiness` (enclosing logical commit).
+
+### Remaining
+
+The model benchmark and first real Target improvement remain unverified.

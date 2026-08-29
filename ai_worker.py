@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -16,9 +17,34 @@ MODEL_CFG = json.loads((ROOT / "config" / "models.json").read_text(encoding="utf
 PROJECT_CFG = json.loads((ROOT / "config" / "project.json").read_text(encoding="utf-8"))
 
 
+def prepare_command(args, *, platform_name=None):
+    """Return a subprocess command that can execute native and script shims.
+
+    Windows command shims installed by npm and similar tools commonly end in
+    ``.cmd`` or ``.bat``. ``CreateProcess`` cannot execute those files directly,
+    so list-form commands must go through ``cmd.exe`` while preserving argument
+    quoting. String commands retain the existing shell behavior.
+    """
+    if isinstance(args, str):
+        return args, True
+
+    command = [str(value) for value in args]
+    if not command:
+        raise ValueError("command must not be empty")
+
+    active_platform = os.name if platform_name is None else platform_name
+    executable = shutil.which(command[0]) if active_platform == "nt" else None
+    if executable and executable.lower().endswith((".cmd", ".bat")):
+        command_line = subprocess.list2cmdline([executable, *command[1:]])
+        command_processor = os.environ.get("COMSPEC", "cmd.exe")
+        return [command_processor, "/d", "/s", "/c", command_line], False
+
+    return command, False
+
+
 def run_cmd(args, cwd=None, check=False):
-    shell = isinstance(args, str)
-    p = subprocess.run(args, cwd=cwd, text=True, capture_output=True, shell=shell)
+    command, shell = prepare_command(args)
+    p = subprocess.run(command, cwd=cwd, text=True, capture_output=True, shell=shell)
     if check and p.returncode != 0:
         raise RuntimeError(f"command failed: {args}\n{p.stdout}\n{p.stderr}")
     return p
@@ -82,34 +108,82 @@ def safe_relpath(value: str):
     return value
 
 
+def ollama_model_names(output: str):
+    """Extract model names from the stable first column of ``ollama list``."""
+    lines = [line.split() for line in output.splitlines() if line.strip()]
+    if not lines:
+        return set()
+    start = 1 if lines[0][0].upper() == "NAME" else 0
+    return {columns[0] for columns in lines[start:] if columns}
+
+
 def doctor():
     print("== Executables ==")
-    failed = False
+    failures = []
+    executables = {}
     for exe in ["git", "codex", "ollama"]:
         found = shutil.which(exe)
+        executables[exe] = found
         ok = bool(found)
-        failed |= not ok
+        if not ok:
+            failures.append(f"missing executable: {exe}")
         print(f"{exe:8} {'OK' if ok else 'FAIL'}  {found or 'NOT FOUND'}")
 
     print("\n== Paths ==")
     print("AI Worker   :", ROOT)
-    print("target repo :", original_repo(), "OK" if original_repo().exists() else "MISSING")
+    target_exists = original_repo().exists()
+    target_is_git = False
+    if target_exists and executables["git"]:
+        target_check = run_cmd(
+            ["git", "rev-parse", "--is-inside-work-tree"], cwd=original_repo()
+        )
+        target_is_git = target_check.returncode == 0 and target_check.stdout.strip() == "true"
+    target_status = "OK" if target_is_git else "MISSING OR NOT GIT"
+    if not target_is_git:
+        failures.append(f"invalid target repository: {original_repo()}")
+    print("target repo :", original_repo(), target_status)
     print("worktree    :", repo(), "EXISTS" if repo().exists() else "not created yet")
 
     print("\n== Versions ==")
-    for args in (["git", "--version"], ["codex", "--version"], ["ollama", "--version"]):
+    for executable, args in (
+        ("git", ["git", "--version"]),
+        ("codex", ["codex", "--version"]),
+        ("ollama", ["ollama", "--version"]),
+    ):
+        if not executables[executable]:
+            continue
         p = run_cmd(args)
-        print((p.stdout or p.stderr).strip())
+        output = (p.stdout or p.stderr).strip()
+        print(output or f"{executable}: no version output")
+        if p.returncode != 0:
+            failures.append(f"version command failed: {executable}")
 
     print("\n== Ollama models ==")
-    p = run_cmd(["ollama", "list"])
-    print((p.stdout or p.stderr).strip())
+    installed_models = set()
+    if executables["ollama"]:
+        p = run_cmd(["ollama", "list"])
+        model_output = (p.stdout or p.stderr).strip()
+        print(model_output or "no models reported")
+        if p.returncode != 0:
+            failures.append("Ollama is not reachable")
+        else:
+            installed_models = ollama_model_names(p.stdout)
 
     print("\n== Configured roles ==")
     for role, model in MODEL_CFG["roles"].items():
-        print(f"{role:20} {model}")
+        available = model in installed_models
+        print(f"{role:20} {model:48} {'OK' if available else 'MISSING'}")
+        if not available:
+            failures.append(f"configured model missing for {role}: {model}")
 
-    return 1 if failed else 0
+    print("\n== Doctor verdict ==")
+    if failures:
+        print("FAIL")
+        for failure in failures:
+            print("-", failure)
+        return 1
+    print("PASS")
+    return 0
 
 
 def bootstrap():

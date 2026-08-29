@@ -58,3 +58,46 @@ Local 모델에게 native agent 권한을 크게 주는 것보다 Harness가 Rep
 - Codex review 결과
 - revision 횟수
 - 최종 test pass 여부
+
+---
+
+## 2026-08-29 — R-002 Actual Host Bootstrap Evidence
+
+### Hypothesis
+
+The initial Harness can reach the installed tools and create an isolated Target
+worktree without changing the original Target working tree.
+
+### Experiment Conditions
+
+- Host: Windows, 32 GB RAM
+- GPU: NVIDIA GeForce RTX 5070 Laptop GPU, 8151 MiB VRAM
+- Git: 2.50.1.windows.1
+- Codex CLI: 0.150.1
+- Ollama: 0.33.1
+- Target base: `main` at `3c05219d50a51f2bdad8e6671e702e8c5d575e50`
+
+### Observation
+
+The first doctor attempt failed before Ollama validation because Python
+`CreateProcess` cannot directly execute the installed npm `codex.CMD` shim. After a
+bounded command-preparation fix, doctor reported all tools and six configured role
+models available. The seven-model inventory matched the expected host state.
+
+The Target worktree was then created at the configured path on
+`ai/team-project-os-improvement`, clean and at the same base HEAD. The original Target
+retained its pre-existing untracked ZIP and received no experimental changes.
+
+### Result
+
+PASS after one implementation revision. The failure was classified as
+`HARNESS_EXECUTION_FAILURE`, not a model or Target failure.
+
+### Conclusion
+
+Windows script-shim handling is a required deterministic Harness boundary. Environment
+readiness and repository isolation are now proven on the actual host.
+
+### Next Experiment
+
+Version and run a role-based model benchmark with real schema and patch hard gates.

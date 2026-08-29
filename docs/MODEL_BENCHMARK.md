@@ -4,14 +4,17 @@
 
 ## Hardware Baseline
 
-초기 대상 PC:
+확인된 대상 PC (`2026-08-29` doctor/bootstrap evidence):
 
 - Windows
 - RAM: 32GB
-- GPU VRAM: 8GB class
-- Runtime: Ollama
+- GPU: NVIDIA GeForce RTX 5070 Laptop GPU
+- GPU VRAM: 8151 MiB
+- Runtime: Ollama 0.33.1
+- Codex CLI: 0.150.1
 
-정확한 GPU/CPU/Ollama version은 첫 `doctor` 실행에서 Evidence로 기록한다.
+Host GPU visibility is recorded only as inventory. Model benchmark runs must separately
+observe the actual Ollama process and must not infer task acceleration from host presence.
 
 ## Installed Models — Initial Inventory
 

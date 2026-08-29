@@ -4,9 +4,18 @@
 
 `V0.1 — Bootstrap / Local Worker Harness`
 
-## Current Goal
+## Current Task
 
-Codex Supervisor가 Local Ollama Worker를 이용해 `team_project_os`의 실제 개선 Task를 수행할 수 있는 최소 Harness를 구축하고 검증한다.
+`TASK-001 — Windows Doctor Readiness` — IMPLEMENTED AND VERIFIED
+
+## Previous Task
+
+Repository bootstrap and initial bounded worker harness — DONE upstream.
+
+## Next Task
+
+Replace the synthetic single-prompt benchmark with a small, versioned role benchmark
+suite, then run the installed models under identical bounded conditions.
 
 ## Current Target
 
@@ -31,13 +40,55 @@ Codex Supervisor가 Local Ollama Worker를 이용해 `team_project_os`의 실제
 - Project definition: DONE
 - Architecture baseline: DONE
 - Codex Supervisor rules: DONE
-- Research/Development logging structure: IN PROGRESS
+- Research/Development logging structure: DONE
 - Minimal Harness: IN PROGRESS
-- Local `D:\AI_worker` checkout: NOT VERIFIED
-- Ollama connectivity: NOT VERIFIED
-- Git worktree bootstrap: NOT VERIFIED
+- Local `D:\AI_worker` checkout: VERIFIED at `c1fe1f665ad7b3f5d6c8500480839426331a7a10`
+- Environment doctor: PASS
+- Ollama connectivity: VERIFIED (`0.33.1`, seven installed models)
+- Git worktree bootstrap: VERIFIED
 - First model benchmark: NOT STARTED
 - First real `team_project_os` improvement Task: NOT STARTED
+
+## Current Architecture
+
+`Codex Supervisor → deterministic Python Harness → bounded/stateless Ollama Workers
+→ schema/patch/test validation → Codex final review → isolated Target worktree`.
+
+No Architecture change was required for TASK-001.
+
+## Current Worker Routing
+
+- Scout: `qwen3:4b`
+- Planner: `qwen3:8b`
+- Coder: `qwen2.5-coder:7b`
+- Reviewer: `qwen3.5:9b`
+- Escalation Coder: `qwen2.5-coder:14b-instruct-q3_K_S`
+- Alternate Reviewer: `mistral-nemo:12b-instruct-2407-q3_K_S`
+
+All routes remain provisional until the role benchmark suite passes.
+
+## Latest Evidence
+
+- `python ai_worker.py doctor`: PASS
+- Windows `codex.CMD` invocation: PASS (`codex-cli 0.150.1`)
+- `python -m unittest discover -s tests -v`: 5/5 PASS
+- `python -m py_compile ai_worker.py`: PASS
+- Target worktree: clean `ai/team-project-os-improvement` at
+  `3c05219d50a51f2bdad8e6671e702e8c5d575e50`
+- Original Target remained on `main`; its pre-existing untracked
+  `team_project_os-main.zip` was not modified.
+
+## Known Problems
+
+- The current benchmark is a synthetic JSON/file-selection smoke test, not yet the
+  required role-based development benchmark.
+- `run_task` has no bounded automatic retry state machine or focused-test execution.
+- No real Target candidate has yet passed apply, test, and Codex acceptance.
+
+## Next Experiment
+
+Run a versioned benchmark packet for Scout, Planner, Coder, and Reviewer with hard
+schema/patch gates, latency, context size, and retained raw Evidence.
 
 ## First Validation Sequence
 
