@@ -9,6 +9,7 @@ runs/*
 !runs/.gitkeep
 state/*
 !state/.gitkeep
+SUPERVISOR_INBOX.md
 
 # Target repository worktrees
 worktree/

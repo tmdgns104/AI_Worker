@@ -1,0 +1,23 @@
+{
+  "stage": "pre_apply_gate",
+  "candidate": "candidate_supervisor.patch",
+  "evaluator_attempts": 2,
+  "attempt_1": "TOOL_ERROR_POWERSHELL_QUOTING",
+  "patch_parse": true,
+  "changed_files": [
+    "tests/test_v016_blocker_regressions.py"
+  ],
+  "allowed_files": [
+    "tests/test_v016_blocker_regressions.py"
+  ],
+  "path_allowlist": true,
+  "unexpected_files": [],
+  "secret_scan_findings": [],
+  "secret_scan_pass": true,
+  "added_lines": 1,
+  "removed_lines": 1,
+  "diff_size_sanity": true,
+  "git_apply_check": true,
+  "git_apply_output": "",
+  "all_hard_gates": true
+}

@@ -1,0 +1,12 @@
+{
+  "scout_model": "qwen3:8b",
+  "planner_model": "qwen3:8b",
+  "coder_model": "qwen2.5-coder:7b",
+  "reviewer_model": "mistral-nemo:12b-instruct-2407-q3_K_S",
+  "seconds": {
+    "scout": 40.52,
+    "planner": 40.65,
+    "coder": 37.03,
+    "reviewer": 24.67
+  }
+}

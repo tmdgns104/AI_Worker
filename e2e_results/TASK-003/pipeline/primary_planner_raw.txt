@@ -1,0 +1,18 @@
+{
+  "summary": "Fix unittest discovery by ensuring test classes are properly structured and methods are correctly named to match discovery patterns.",
+  "risks": [
+    "Potential test method naming conflicts if additional tests are added later."
+  ],
+  "plan": "Ensure all test methods start with 'test_' and test classes inherit from unittest.TestCase. Verify no syntax errors in the file.",
+  "files_to_change": [
+    "tests/test_v016_blocker_regressions.py"
+  ],
+  "tests": [
+    "Verify test methods start with 'test_'",
+    "Confirm test classes inherit from unittest.TestCase"
+  ],
+  "constraints": [
+    "No changes to production code or other test files",
+    "Preserve existing test semantics and behavior"
+  ]
+}

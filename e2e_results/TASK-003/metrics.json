@@ -1,0 +1,87 @@
+{
+  "task_id": "TASK-003",
+  "started_at": "2026-08-29T16:53:57.855950+09:00",
+  "target_task_completed_at": "2026-08-29T17:06:30.176020+09:00",
+  "final_verification_completed_at": "2026-08-29T17:10:32.020410+09:00",
+  "target_pipeline_time_seconds": 752.32,
+  "total_task_time_seconds": 994.164,
+  "local_worker_calls": 8,
+  "local_worker_latency_sum_seconds": 412.492,
+  "stages": {
+    "task_discovery_scout": {
+      "model": "qwen3:8b",
+      "latency_seconds": 30.337,
+      "context_chars": 2975,
+      "result": "PASS"
+    },
+    "scout": {
+      "model": "qwen3:8b",
+      "latency_seconds": 40.52,
+      "context_chars": 2999,
+      "result": "PASS",
+      "fallback": false
+    },
+    "planner_primary": {
+      "model": "qwen3:8b",
+      "latency_seconds": 40.65,
+      "context_chars": 18867,
+      "result": "INCORRECT_REASONING"
+    },
+    "coder_fast": {
+      "model": "qwen2.5-coder:7b",
+      "latency_seconds": 37.03,
+      "context_chars": 19478,
+      "result": "FORMAT_FAILURE+BAD_PATCH+INCORRECT_IMPLEMENTATION"
+    },
+    "reviewer_initial": {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_S",
+      "latency_seconds": 24.67,
+      "context_chars": 27035,
+      "result": "FORMAT_FAILURE+FALSE_ACCEPT"
+    },
+    "planner_fallback": {
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "latency_seconds": 34.777,
+      "context_chars": 18708,
+      "result": "INCORRECT_REASONING+SCOPE_EXPANSION"
+    },
+    "escalation_coder": {
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "latency_seconds": 192.46,
+      "context_chars": 27501,
+      "result": "MODEL_CAPABILITY_LIMIT+BAD_PATCH"
+    },
+    "reviewer_final": {
+      "model": "mistral-nemo:12b-instruct-2407-q3_K_S",
+      "latency_seconds": 12.048,
+      "context_chars": 1365,
+      "result": "SCHEMA_PASS_FALSE_REVISE"
+    }
+  },
+  "retry_count": 0,
+  "escalation_count": 1,
+  "candidate_count": 3,
+  "local_candidate_count": 2,
+  "local_candidate_sha256": {
+    "fast": "6fc7e4ce900bb59c06632505e0d023dbfe734e2001761a532a82196f024a9dd6",
+    "escalated": "6fc7e4ce900bb59c06632505e0d023dbfe734e2001761a532a82196f024a9dd6",
+    "byte_identical": true
+  },
+  "git_apply_failures": 2,
+  "first_candidate_acceptance": false,
+  "escalated_candidate_acceptance": false,
+  "supervisor_candidate_acceptance": true,
+  "codex_material_interventions": 2,
+  "codex_intervention_rate": 0.4,
+  "codex_intervention_rate_definition": "2 material interventions / 5 functional Local stages (Scout, Planner, Coder, Reviewer, Escalation)",
+  "codex_direct_code_edits": 1,
+  "codex_direct_code_edit_description": "One-line supervisor Candidate after both Local Coder Candidates failed",
+  "focused_test_result": "PASS 14/14",
+  "regression_result": "PASS 78/78",
+  "final_changed_files": [
+    "tests/test_v016_blocker_regressions.py"
+  ],
+  "final_diff_added_lines": 1,
+  "final_diff_removed_lines": 1,
+  "target_commit": "1ecbd8fa7d7a61e9b721dc115788ec52b1a37394"
+}

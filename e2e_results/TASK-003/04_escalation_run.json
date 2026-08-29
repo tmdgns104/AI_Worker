@@ -1,0 +1,8 @@
+{
+  "stage": "escalation_coder",
+  "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+  "returncode": 0,
+  "wall_seconds": 192.735,
+  "stdout": "model: qwen2.5-coder:14b-instruct-q3_K_S\nseconds: 192.46\nD:\\AI_worker\\runs\\RUN-20260829-165616\\candidate_revised.patch\ngit apply --check: FAIL\nerror: corrupt patch at line 12\n",
+  "stderr": ""
+}

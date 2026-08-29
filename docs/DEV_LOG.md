@@ -122,3 +122,58 @@ Qwen 14B is qualified only for the tested feedback-driven Escalation case. Commi
 The first real Target E2E change and broad multi-case Coder qualification remain
 UNVERIFIED. Target baseline full discovery currently has one pre-existing test import
 failure; this Task did not modify Target code.
+
+---
+
+## 2026-08-29 — D-004 Real Target E2E Validation
+
+### Task
+
+Run a small real `team_project_os` change through the conditional Local Worker pipeline,
+measure autonomy and Candidate acceptance, apply only a validated patch, and preserve
+the original checkout.
+
+### Changed
+
+- Added the TASK-003 contract and tracked raw/machine Evidence under
+  `e2e_results/TASK-003/`.
+- Classified the generated `SUPERVISOR_INBOX.md` as ignored local runtime output so a
+  normal pipeline run no longer dirties the AI_Worker worktree.
+- Used Local Scout discovery to select the existing unittest discovery import failure.
+- Ran primary/fallback planning, 7B fast coding, independent Mistral review, and one 14B
+  feedback escalation.
+- Applied a one-line Supervisor takeover Candidate only after allowlist, parse, secret,
+  diff-size, and apply gates passed.
+- Committed the validated Target worktree change as `1ecbd8f`; no Target push occurred.
+- Updated benchmark external-validity findings, research record, Task result, and status.
+
+### Reason
+
+V0.1 needed real Evidence for whether conditional benchmark routing could complete a
+Target change without Codex implementation. The experiment exposed a concrete
+escalation generalization failure rather than only producing a successful product diff.
+
+### Verification
+
+- Before focused/full discovery — FAIL with the same known import error
+- After focused discovery — 14/14 PASS
+- After full discovery — 78/78 PASS
+- Final Candidate pre-apply hard gates — PASS
+- Target `git diff --check` and clean state after commit — PASS
+- Original Target HEAD/status invariant — PASS
+- AI_Worker unit tests — 15/15 PASS
+- AI_Worker Python compile — PASS
+- AI_Worker Doctor — PASS
+- Config/suite/E2E JSON parse — 15 files PASS
+- AI_Worker `git diff --check` — PASS
+
+### Result
+
+Target improvement PASS; Local-only pipeline acceptance FAIL. First and escalated Local
+Candidates were rejected, while the one-line Supervisor Candidate passed. Codex direct
+Target edits were recorded as 1 rather than hidden.
+
+### Remaining
+
+TASK-004 must improve and re-qualify the escalation feedback contract using this fixed
+failure case before a second, harder Target E2E attempt.

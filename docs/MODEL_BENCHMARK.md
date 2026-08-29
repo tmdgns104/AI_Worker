@@ -146,3 +146,32 @@ Escalation:  qwen2.5-coder:14b (qualified on ESC-001)
 No new model was downloaded. The installed 14B feedback path demonstrated a useful
 capability before an external-model hypothesis became necessary. Broader qualification
 requires more cases and the real Target E2E Task.
+
+## TASK-003 Real E2E External Validity
+
+The first real Target run changed the operational interpretation of TASK-002 without
+rewriting its historical benchmark result.
+
+| Role | Real E2E observation | Operational decision |
+|---|---|---|
+| Scout qwen3:8b | Selected the exact failing file twice; no invented path | Conditional route supported for this case |
+| Planner qwen3:8b | Strict JSON but wrong root cause/plan | Semantic gate remains mandatory |
+| Planner 14B fallback | Found the import but expanded to fixture reimplementation and omitted tests | Fallback remains unqualified |
+| Coder 7B | Corrupt, unrelated, behavior-breaking patch | Reject-only fast attempt confirmed |
+| Reviewer Mistral | Initial false ACCEPT; final false REVISE | Never authoritative; schema and deterministic gates required |
+| Escalation 14B | Repeated the failed 7B patch verbatim after 192.46 s | ESC-001 qualification did not generalize; operationally conditional |
+
+Target tests passed only after a one-line Codex takeover Candidate. Therefore the current
+route remains:
+
+```text
+Scout:       qwen3:8b -> qwen3.5:9b -> Codex (conditional)
+Planner:     qwen3:8b -> 14B -> Codex (both Local plans require semantic validation)
+Coder:       7B reject-only candidate -> 14B conditional escalation -> Codex
+Reviewer:    Mistral ordinary / 14B security, never authoritative
+Escalation:  benchmark-qualified on ESC-001 only; real E2E qualification FAILED
+```
+
+No external model is downloaded yet. The next highest-value experiment is to fix the
+feedback/evaluation contract and run multiple frozen escalation cases before attributing
+the failure to insufficient model capacity.

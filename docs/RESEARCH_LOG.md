@@ -175,3 +175,59 @@ failed. Reviewer specialization also outperformed a universal reviewer assumptio
 
 Run one small real Target change E2E and measure first-candidate acceptance, escalation,
 Codex correction, focused/regression time, and final diff quality.
+
+---
+
+## 2026-08-29 — R-005 Real Target E2E External-Validity Test
+
+### Hypothesis
+
+The TASK-002 conditional routing can finish one small real Target change without Codex
+writing Target code, and the 14B escalation behavior observed in ESC-001 generalizes to
+a production-like failure packet.
+
+### Conditions
+
+- Target: isolated `ai/team-project-os-improvement` worktree at `3c05219`
+- Improvement: repair the existing blocker-test import failure under standard unittest
+  discovery; one allowed test file; no production or dependency changes
+- Locality: loopback Ollama, temperature 0, seed 42, sequential workers
+- Pipeline: two Scout calls including discovery, primary/fallback Planner, 7B Coder,
+  Mistral review, one feedback-driven 14B escalation, and final Mistral review
+- Retry: zero same-prompt retries; one permitted escalation
+- Before/after identical focused and full discovery commands
+
+### Result
+
+- Target change: PASS; focused 14/14 and full 78/78 tests passed after one `+1/-1`
+  import correction committed as `1ecbd8f`.
+- Pipeline autonomy: FAIL. Both Local Coder Candidates failed apply and correctness
+  gates. The 14B escalation returned the 7B 7,751-byte patch verbatim after 192.46 s.
+- Planner: qwen3:8b ignored the traceback; the 14B fallback identified the import but
+  proposed fixture removal/reimplementation and omitted validation.
+- Reviewer: Mistral first violated schema and falsely claimed tests passed, then returned
+  strict JSON but falsely revised the final correct one-line patch.
+- Codex direct code edits: 1; material interventions: 2; Intervention Rate: 40%.
+- Eight Local calls consumed 412.492 s summed latency; task wall time through Target
+  commit was 752.320 s.
+
+### Unexpected Findings
+
+The benchmark-qualified ESC-001 behavior did not generalize even to a smaller patch.
+More feedback text and the full prior Candidate did not improve the result; the model
+anchored on and repeated the failed patch. Reviewer schema compliance also did not
+predict correct adjudication.
+
+### Conclusion
+
+TASK-002 was directionally useful for Scout and reject-only fast Coder routing, but one
+synthetic escalation pass was insufficient qualification. Operationally, 14B escalation
+must be treated as conditional until it passes multiple fixed real-failure cases. The
+Harness should reject semantically irrelevant plans before Coder invocation and should
+test feedback packet ordering/content instead of simply adding more context.
+
+### Next Experiment
+
+TASK-004 will freeze this failure as an escalation regression case, compare minimal
+failure feedback against feedback plus the full prior patch, add semantic/minimal-diff
+gates, and re-qualify the escalation route before attempting a harder Target change.

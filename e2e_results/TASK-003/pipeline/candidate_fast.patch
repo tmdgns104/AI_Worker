@@ -1,0 +1,187 @@
+```diff
+diff --git a/tests/test_v016_blocker_regressions.py b/tests/test_v016_blocker_regressions.py
+--- a/tests/test_v016_blocker_regressions.py
++++ b/tests/test_v016_blocker_regressions.py
+@@ -1,6 +1,6 @@
+ from __future__ import annotations
+ 
+-import importlib
+ import json
+ import os
+ import tempfile
+@@ -10,7 +10,6 @@
+ from unittest.mock import patch
+ 
+ from fastapi.testclient import TestClient
+-import from app.conversation_import import distill_conversation, select_message_chunk
+ from app.conversation_providers import CodexConversationProvider, ConversationMessage
+ from app.materializer_v015 import (
+     V016_ADDITIONS_BEGIN,
+@@ -18,7 +17,6 @@
+ from local_bridge.providers import ProviderResult, build_invocation
+ from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID
+ 
+-EMPTY_DELTA = {
+-    "project_updates": {},
+-    "requirements": [],
+-    "decisions": [],
+-    "milestones": [],
+-    "backlog_items": [],
+-    "functions": [],
+-    "screens": [],
+-    "interfaces": [],
+-    "tests": [],
+-    "policies": [],
+-    "data_items": [],
+-    "design_updates": [],
+-    "pending": [],
+-}
+ 
+ class V016BlockerUnitTests(unittest.TestCase):
+     def test_session_metadata_cache_reuses_unchanged_rollout_and_invalidates_on_change(self):
+@@ -100,7 +96,7 @@ class V016BlockerUnitTests(unittest.TestCase):
+         self.assertEqual(total, 5)
+ 
+     def test_distiller_uses_disposable_tool_disabled_environment_and_schema(self):
+-        captured: dict[str, object] = {}
++        captured = {}
+ 
+         def fake_provider(_provider: str, _prompt: str, **kwargs):
+             isolation_root = Path(kwargs["cwd"])
+@@ -150,7 +146,7 @@ class V016BlockerUnitTests(unittest.TestCase):
+         self.assertEqual(result["requirements"], [])
+         self.assertFalse(Path(captured["cwd"]).exists())
+         self.assertFalse(captured["schema"]["additionalProperties"])
+-        with tempfile.TemporaryDirectory() as directory:
++        with tempfile.TemporaryDirectory() as directory:
+             root = Path(directory)
+             schema_path = root / "schema.json"
+             schema_path.write_text("{}", encoding="utf-8")
+@@ -200,7 +196,7 @@ class V016BlockerUnitTests(unittest.TestCase):
+         self.assertIn("--strict-config", command)
+         self.assertIn("sandbox_workspace_write.network_access=false", command)
+         self.assertIn(str(schema_path), command)
+-        disabled = {
++        disabled = {
+             command[index + 1]
+             for index, value in enumerate(command[:-1])
+             if value == "--disable"
+@@ -250,7 +246,7 @@ class V016BlockerUnitTests(unittest.TestCase):
+         self.assertEqual(once.count(V016_ADDITIONS_BEGIN), 1)
+         self.assertEqual(twice, once)
+ 
+-        later_generated = (
++        later_generated = (
+             "# Requirements\n\n"
+             "| Ref | Requirement | Detail |\n"
+             "|---|---|---|\n"
+@@ -300,7 +296,7 @@ class V016BlockerUnitTests(unittest.TestCase):
+         self.assertIn("REQ-HUMAN-001", once)
+         self.assertIn("REQ-IMPORT-001", once)
+         self.assertEqual(once.count(V016_ADDITIONS_BEGIN), 1)
+-        self.assertEqual(twice, once)
++        self.assertEqual(twice, once)
+ 
+         later_generated = (
+             "# Requirements\n\n"
+@@ -350,7 +346,7 @@ class V016BlockerUnitTests(unittest.TestCase):
+         self.assertIn("REQ-HUMAN-001", later)
+         self.assertIn("REQ-IMPORT-001", later)
+         self.assertIn("REQ-IMPORT-002", later)
+-        self.assertEqual(later.count(V016_ADDITIONS_BEGIN), 1)
++        self.assertEqual(later.count(V016_ADDITIONS_BEGIN), 1)
+         self.assertEqual(repeated_later, later)
+ 
+ class V016BlockerApiTests(unittest.TestCase):
+@@ -400,7 +396,7 @@ class V016BlockerApiTests(unittest.TestCase):
+         self.assertEqual(session["total_unimported"], 155)
+         self.assertEqual(len(session["analysis_messages"]), 150)
+         self.assertTrue(session["has_more"])
+-        self.assertEqual(session["remaining_after_chunk"], 5)
++        self.assertEqual(session["remaining_after_chunk"], 5)
+ 
+         preview = self._preview(
+             EMPTY_DELTA,
+@@ -450,7 +446,7 @@ class V016BlockerApiTests(unittest.TestCase):
+         self.assertEqual(preview.status_code, 200, preview.text)
+         payload = preview.json()
+         self.assertEqual(len(payload["messages"]), 150)
+-        self.assertEqual(payload["remaining_after_chunk"], 5)
++        self.assertEqual(payload["remaining_after_chunk"], 5)
+         self.assertTrue(payload["has_more"])
+ 
+     def test_api_rejects_a_cursor_that_skips_unimported_messages(self):
+@@ -500,7 +496,7 @@ class V016BlockerApiTests(unittest.TestCase):
+         self.assertEqual(response.status_code, 409, response.text)
+         self.assertIn("cannot be skipped", response.text)
+         distiller.assert_not_called()
+ 
+     def test_structured_state_reconciles_current_database_and_canonical_documents(self):
+@@ -550,7 +546,7 @@ class V016BlockerApiTests(unittest.TestCase):
+         self.assertEqual(requirement_state["detail"], "Latest human detail")
+         self.assertIn(
+             "BL-HUMAN-001",
+-            {item["id"] for item in reconciled["backlog_items"]},
++            {item["id"] for item in reconciled["backlog_items"]},
+         )
+ 
+     def test_reconciliation_prefers_official_rows_and_documents_over_stale_cache(self):
+@@ -600,7 +596,7 @@ class V016BlockerApiTests(unittest.TestCase):
+         self.client.post(
+             f"/api/projects/{self.project_id}/decisions",
+             json={
+-                "title": "Human database decision",
++                "title": "Human database decision",
+                 "body": "Current database body",
+                 "author": "Human",
+                 "status": "accepted",
+             },
+         ).raise_for_status()
+         self.client.post(
+             f"/api/projects/{self.project_id}/nodes",
+             json={
+-                "view": "architecture",
++                "view": "architecture",
+                 "label": "Human database node",
+                 "kind": "service",
+                 "detail": "Current database node detail",
+             },
+         ).raise_for_status()
+ 
+         snapshot = self.client.get(f"/api/projects/{self.project_id}/snapshot").json()
+         backlog = next(
+             item for item in snapshot["documents"] if item["doc_type"] == "backlog"
+         )
+         self.client.patch(
+             f"/api/documents/{backlog['id']}",
+             json={
+-                "content": "# Human Backlog\n\nBL-DOC-001 is the current canonical item.\n",
++                "content": "# Human Backlog\n\nBL-DOC-001 is the current canonical item.\n",
+                 "status": "review",
+                 "updated_by": "Human",
+             },
+         ).raise_for_status()
+ 
+         stale = {
+-            **EMPTY_DELTA,
++            **EMPTY_DELTA,
+             "project_updates": {"goal": "Stale cached goal"},
+             "requirements": [
+                 {
+-                    "ref": "REQ-HUMAN-001",
++                    "ref": "REQ-HUMAN-001",
+                     "title": "Human-owned requirement",
+                     "detail": "Stale cached detail",
+                 }
+             ],
+             "decisions": [
+                 {
+-                    "ref": "DEC-HUMAN-001",
++                    "ref": "DEC-HUMAN-001",
+                     "title": "Human database decision",
+                     "body": "Stale cached body",
+                     "status": "pending",
+                 }
+             ],
+         }
+```

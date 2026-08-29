@@ -1,0 +1,487 @@
+
+===== FILE: tests/test_v016_blocker_regressions.py =====
+from __future__ import annotations
+
+import importlib
+import json
+import os
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from fastapi.testclient import TestClient
+
+from app.conversation_import import distill_conversation, select_message_chunk
+from app.conversation_providers import CodexConversationProvider, ConversationMessage
+from app.materializer_v015 import (
+    V016_ADDITIONS_BEGIN,
+    merge_document_non_regressive,
+)
+from app.structured_state_v016 import rebase_conflicts
+from local_bridge.providers import ProviderResult, build_invocation
+from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID
+
+
+EMPTY_DELTA = {
+    "project_updates": {},
+    "requirements": [],
+    "decisions": [],
+    "milestones": [],
+    "backlog_items": [],
+    "functions": [],
+    "screens": [],
+    "interfaces": [],
+    "tests": [],
+    "policies": [],
+    "data_items": [],
+    "design_updates": [],
+    "pending": [],
+}
+
+
+class V016BlockerUnitTests(unittest.TestCase):
+    def test_session_metadata_cache_reuses_unchanged_rollout_and_invalidates_on_change(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = CodexFixture(Path(directory))
+            provider = CodexConversationProvider(fixture.root, executable="")
+            provider.clear_metadata_cache()
+
+            with patch.object(
+                provider, "_parse_rollout", wraps=provider._parse_rollout
+            ) as parser:
+                first = provider.list_sessions()
+                second = provider.list_sessions()
+                self.assertEqual(parser.call_count, 1)
+                self.assertEqual(second, first)
+
+                fixture.append("user", "A later message")
+                changed = provider.list_sessions()
+                self.assertEqual(parser.call_count, 2)
+                self.assertEqual(changed[0].message_count, first[0].message_count + 1)
+
+    def test_message_chunk_is_contiguous_and_bounded(self):
+        messages = [
+            ConversationMessage(cursor, "user", "x" * 10, "")
+            for cursor in range(1, 7)
+        ]
+
+        selected, total = select_message_chunk(
+            messages,
+            after_cursor=1,
+            max_messages=3,
+            max_characters=1_000,
+        )
+        self.assertEqual([item.cursor for item in selected], [2, 3, 4])
+        self.assertEqual(total, 5)
+
+        character_limited, total = select_message_chunk(
+            messages,
+            after_cursor=1,
+            max_messages=10,
+            max_characters=20,
+        )
+        self.assertEqual([item.cursor for item in character_limited], [2, 3])
+        self.assertEqual(total, 5)
+
+    def test_distiller_uses_disposable_tool_disabled_environment_and_schema(self):
+        captured: dict[str, object] = {}
+
+        def fake_provider(_provider: str, _prompt: str, **kwargs):
+            isolation_root = Path(kwargs["cwd"])
+            schema_path = Path(kwargs["output_schema"])
+            environment = dict(kwargs["environment"])
+            self.assertTrue(isolation_root.is_dir())
+            self.assertEqual(schema_path.parent, isolation_root)
+            self.assertTrue(schema_path.is_file())
+            self.assertFalse((isolation_root / ".git").exists())
+            self.assertNotIn("APP_ACCESS_KEY", environment)
+            self.assertNotIn("PROJECT_OS_DB", environment)
+            captured.update(
+                cwd=isolation_root,
+                schema=json.loads(schema_path.read_text(encoding="utf-8")),
+                environment=environment,
+            )
+            return ProviderResult(
+                provider="codex",
+                returncode=0,
+                stdout=json.dumps(EMPTY_DELTA),
+                stderr="",
+                command_display="codex exec",
+            )
+
+        with patch.dict(
+            os.environ,
+            {
+                "APP_ACCESS_KEY": "must-not-reach-distiller",
+                "PROJECT_OS_DB": "must-not-reach-distiller.db",
+            },
+            clear=False,
+        ), patch("app.conversation_import.run_provider", side_effect=fake_provider):
+            result = distill_conversation(
+                messages=[{"cursor": 1, "role": "user", "content": "Project fact"}],
+                current_state={},
+                project_name="Test project",
+                cwd=Path(__file__).resolve().parents[1],
+            )
+
+        self.assertEqual(result["requirements"], [])
+        self.assertFalse(Path(captured["cwd"]).exists())
+        self.assertFalse(captured["schema"]["additionalProperties"])
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            schema_path = root / "schema.json"
+            schema_path.write_text("{}", encoding="utf-8")
+            invocation = build_invocation(
+                "codex",
+                "untrusted transcript",
+                cwd=root,
+                purpose="conversation-import",
+                output_schema=schema_path,
+            )
+            command = invocation.command
+            self.assertIn("--strict-config", command)
+            self.assertIn("sandbox_workspace_write.network_access=false", command)
+            self.assertIn(str(schema_path), command)
+            disabled = {
+                command[index + 1]
+                for index, value in enumerate(command[:-1])
+                if value == "--disable"
+            }
+            self.assertTrue(
+                {
+                    "shell_tool",
+                    "unified_exec",
+                    "code_mode_host",
+                    "apps",
+                    "plugins",
+                    "browser_use",
+                    "view_image",
+                    "image_generation",
+                    "multi_agent",
+                    "in_app_local_automation",
+                    "hooks",
+                    "skill_mcp_dependency_install",
+                    "tool_call_mcp_elicitation",
+                    "auth_elicitation",
+                    "remote_plugin",
+                    "goals",
+                }.issubset(disabled)
+            )
+
+    def test_rebase_conflicts_use_requirement_ref_and_true_three_way_semantics(self):
+        base = {
+            "requirements": [
+                {"ref": "REQ-HUMAN-001", "title": "Owned", "detail": "Base"},
+                {"ref": "REQ-HUMAN-002", "title": "Other", "detail": "Base"},
+            ]
+        }
+        unrelated_current = {
+            "requirements": [
+                {"ref": "REQ-HUMAN-001", "title": "Owned", "detail": "Base"},
+                {"ref": "REQ-HUMAN-002", "title": "Other", "detail": "Human edit"},
+            ]
+        }
+        delta = {
+            "requirements": [
+                {"ref": "REQ-HUMAN-001", "title": "Owned", "detail": "Imported edit"}
+            ]
+        }
+        self.assertEqual(rebase_conflicts(base, unrelated_current, delta), [])
+
+        target_current = {
+            "requirements": [
+                {"ref": "REQ-HUMAN-001", "title": "Owned", "detail": "Human edit"},
+                {"ref": "REQ-HUMAN-002", "title": "Other", "detail": "Base"},
+            ]
+        }
+        self.assertEqual(
+            rebase_conflicts(base, target_current, delta),
+            ["requirements.REQ-HUMAN-001"],
+        )
+
+        same_result = {
+            "requirements": [
+                {"ref": "REQ-HUMAN-001", "title": "Owned", "detail": "Imported edit"},
+                {"ref": "REQ-HUMAN-002", "title": "Other", "detail": "Base"},
+            ]
+        }
+        self.assertEqual(rebase_conflicts(base, same_result, delta), [])
+
+        concurrent_creation = {
+            "requirements": [
+                {"ref": "REQ-HUMAN-003", "title": "Human", "detail": "Human value"}
+            ]
+        }
+        incoming_creation = {
+            "requirements": [
+                {"ref": "REQ-HUMAN-003", "title": "Imported", "detail": "Model value"}
+            ]
+        }
+        self.assertEqual(
+            rebase_conflicts({}, concurrent_creation, incoming_creation),
+            ["requirements.REQ-HUMAN-003"],
+        )
+
+    def test_non_regressive_document_merge_rebuilds_one_bounded_addition_block(self):
+        old = (
+            "# Human Requirements\n\n"
+            "| Ref | Requirement | Detail |\n"
+            "|---|---|---|\n"
+            "| REQ-HUMAN-001 | Human-owned | Preserve this detailed requirement |\n"
+            + ("Human rationale and acceptance evidence.\n" * 60)
+        )
+        generated = (
+            "# Requirements\n\n"
+            "| Ref | Requirement | Detail |\n"
+            "|---|---|---|\n"
+            "| REQ-IMPORT-001 | Imported | New conversation requirement |\n"
+        )
+
+        once = merge_document_non_regressive(old, generated)
+        twice = merge_document_non_regressive(once, generated)
+
+        self.assertIn("REQ-HUMAN-001", once)
+        self.assertIn("REQ-IMPORT-001", once)
+        self.assertEqual(once.count(V016_ADDITIONS_BEGIN), 1)
+        self.assertEqual(twice, once)
+
+        later_generated = (
+            "# Requirements\n\n"
+            "| Ref | Requirement | Detail |\n"
+            "|---|---|---|\n"
+            "| REQ-IMPORT-002 | Later import | Another conversation requirement |\n"
+        )
+        later = merge_document_non_regressive(once, later_generated)
+        repeated_later = merge_document_non_regressive(later, later_generated)
+
+        self.assertIn("REQ-HUMAN-001", later)
+        self.assertIn("REQ-IMPORT-001", later)
+        self.assertIn("REQ-IMPORT-002", later)
+        self.assertEqual(later.count(V016_ADDITIONS_BEGIN), 1)
+        self.assertEqual(repeated_later, later)
+
+
+class V016BlockerApiTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.original_environment = {
+            key: os.environ.get(key)
+            for key in (
+                "PROJECT_OS_DB",
+                "PROJECT_OS_SEED_DEMO",
+                "PROJECT_OS_CODEX_HOME",
+            )
+        }
+
+    @classmethod
+    def tearDownClass(cls):
+        for key, value in cls.original_environment.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        from app import main as core
+        from app import main_v014
+
+        importlib.reload(core)
+        importlib.reload(main_v014)
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        self.fixture = CodexFixture(self.root / "codex")
+        os.environ["PROJECT_OS_DB"] = str(self.root / "project-os.db")
+        os.environ["PROJECT_OS_SEED_DEMO"] = "0"
+        os.environ["PROJECT_OS_CODEX_HOME"] = str(self.fixture.root)
+
+        from app import main as core
+        from app import main_v014, main_v015, main_v016
+
+        importlib.reload(core)
+        importlib.reload(main_v014)
+        importlib.reload(main_v015)
+        importlib.reload(main_v016)
+        self.main = main_v016
+        self.main.core.init_db()
+        self.client = TestClient(self.main.app)
+        response = self.client.post(
+            "/api/projects",
+            json={
+                "name": "V0.16 blocker regression",
+                "goal": "Preserve human edits while importing conversations",
+                "project_type": "software",
+                "schedule": "8 weeks",
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.text)
+        self.project_id = response.json()["id"]
+
+    def tearDown(self):
+        self.client.close()
+        CodexConversationProvider.clear_metadata_cache()
+        os.environ.pop("PROJECT_OS_CODEX_HOME", None)
+        self.tmp.cleanup()
+
+    def _preview(self, delta: dict, **overrides):
+        payload = {
+            "project_id": self.project_id,
+            "provider": "codex",
+            "session_id": SESSION_ID,
+            **overrides,
+        }
+        with patch("app.main_v016.distill_conversation", return_value=delta):
+            return self.client.post("/api/conversation-import/preview", json=payload)
+
+    def test_api_exposes_and_processes_only_the_next_bounded_chunk(self):
+        for index in range(151):
+            role = "user" if index % 2 == 0 else "assistant"
+            self.fixture.append(role, f"Additional message {index}")
+
+        selected = self.client.get(
+            f"/api/conversation-import/sessions/{SESSION_ID}",
+            params={"project_id": self.project_id},
+        )
+        self.assertEqual(selected.status_code, 200, selected.text)
+        session = selected.json()
+        self.assertEqual(session["total_unimported"], 155)
+        self.assertEqual(len(session["analysis_messages"]), 150)
+        self.assertTrue(session["has_more"])
+        self.assertEqual(session["remaining_after_chunk"], 5)
+
+        preview = self._preview(
+            EMPTY_DELTA,
+            from_cursor=session["imported_cursor"],
+            to_cursor=session["next_to_cursor"],
+        )
+        self.assertEqual(preview.status_code, 200, preview.text)
+        payload = preview.json()
+        self.assertEqual(len(payload["messages"]), 150)
+        self.assertEqual(payload["remaining_after_chunk"], 5)
+        self.assertTrue(payload["has_more"])
+
+    def test_api_rejects_a_cursor_that_skips_unimported_messages(self):
+        with patch("app.main_v016.distill_conversation") as distiller:
+            response = self.client.post(
+                "/api/conversation-import/preview",
+                json={
+                    "project_id": self.project_id,
+                    "provider": "codex",
+                    "session_id": SESSION_ID,
+                    "from_cursor": 1,
+                },
+            )
+        self.assertEqual(response.status_code, 409, response.text)
+        self.assertIn("cannot be skipped", response.text)
+        distiller.assert_not_called()
+
+    def test_structured_state_reconciles_current_database_and_canonical_documents(self):
+        requirement = self.client.post(
+            f"/api/projects/{self.project_id}/requirements",
+            json={
+                "title": "REQ-HUMAN-001 Human-owned requirement",
+                "detail": "Original detail",
+                "status": "defined",
+            },
+        ).json()
+        with self.main.core.db() as conn:
+            initial = self.main.load_structured_state(conn, self.project_id)
+        self.assertEqual(
+            next(item for item in initial["requirements"] if item["ref"] == "REQ-HUMAN-001")["detail"],
+            "Original detail",
+        )
+
+        self.client.patch(
+            f"/api/requirements/{requirement['id']}",
+            json={"detail": "Latest human detail"},
+        ).raise_for_status()
+        snapshot = self.client.get(f"/api/projects/{self.project_id}/snapshot").json()
+        backlog = next(
+            item for item in snapshot["documents"] if item["doc_type"] == "backlog"
+        )
+        self.client.patch(
+            f"/api/documents/{backlog['id']}",
+            json={
+                "content": (
+                    "# Human Backlog\n\n"
+                    "| ID | Title |\n|---|---|\n"
+                    "| BL-HUMAN-001 | Human-authored backlog item |\n"
+                ),
+                "status": "review",
+                "updated_by": "Human",
+            },
+        ).raise_for_status()
+
+        with self.main.core.db() as conn:
+            reconciled = self.main.load_structured_state(conn, self.project_id)
+        requirement_state = next(
+            item
+            for item in reconciled["requirements"]
+            if item["ref"] == "REQ-HUMAN-001"
+        )
+        self.assertEqual(requirement_state["detail"], "Latest human detail")
+        self.assertIn(
+            "BL-HUMAN-001",
+            {item["id"] for item in reconciled["backlog_items"]},
+        )
+
+    def test_reconciliation_prefers_official_rows_and_documents_over_stale_cache(self):
+        self.client.post(
+            f"/api/projects/{self.project_id}/requirements",
+            json={
+                "title": "REQ-HUMAN-001 Human-owned requirement",
+                "detail": "Current database detail",
+                "status": "defined",
+            },
+        ).raise_for_status()
+        self.client.post(
+            f"/api/projects/{self.project_id}/decisions",
+            json={
+                "title": "Human database decision",
+                "body": "Current database body",
+                "author": "Human",
+                "status": "accepted",
+            },
+        ).raise_for_status()
+        self.client.post(
+            f"/api/projects/{self.project_id}/nodes",
+            json={
+                "view": "architecture",
+                "label": "Human database node",
+                "kind": "service",
+                "detail": "Current database node detail",
+            },
+        ).raise_for_status()
+
+        snapshot = self.client.get(f"/api/projects/{self.project_id}/snapshot").json()
+        backlog = next(
+            item for item in snapshot["documents"] if item["doc_type"] == "backlog"
+        )
+        self.client.patch(
+            f"/api/documents/{backlog['id']}",
+            json={
+                "content": "# Human Backlog\n\nBL-DOC-001 is the current canonical item.\n",
+                "status": "review",
+                "updated_by": "Human",
+            },
+        ).raise_for_status()
+
+        stale = {
+            **EMPTY_DELTA,
+            "project_updates": {"goal": "Stale cached goal"},
+            "requirements": [
+                {
+                    "ref": "REQ-HUMAN-001",
+                    "title": "Human-owned requirement",
+                    "detail": "Stale cached detail",
+                }
+            ],
+            "decisions": [
+                {
+                    "ref": "DEC-HUMAN-001",
+                    "title": "Human database decision",
+                    "body": "Stale cached body",
+                    "status": "pending",
+                }
+        

@@ -1,0 +1,14 @@
+{
+  "decision": "TARGET_CHANGE_PASS_PIPELINE_AUTONOMY_FAIL",
+  "target_change": "PASS",
+  "pipeline_without_codex_implementation": "FAIL",
+  "reason": "Both 7B first Candidate and 14B feedback escalation repeated a corrupt unrelated patch; Codex supplied the final one-line Candidate.",
+  "benchmark_external_validity": {
+    "scout": "supported for this case",
+    "planner": "not supported; both primary and fallback failed semantic validation",
+    "coder_fast": "supported as reject-only",
+    "reviewer": "conditional warning confirmed; initial false accept and final false revise",
+    "escalation": "ESC-001 qualification did not generalize to this real E2E case"
+  },
+  "next_task": "TASK-004 — Coder feedback contract and escalation regression qualification"
+}

@@ -3,3 +3,6 @@ benchmark_results/**/raw/*.txt -whitespace
 
 # Unified-diff fixtures require a single space to represent blank context lines.
 benchmarks/fixtures/*.patch -whitespace
+
+# Preserve real E2E worker inputs and Candidates exactly as observed.
+e2e_results/**/pipeline/* -whitespace

@@ -1,0 +1,27 @@
+FAILURE CLASSIFICATION
+- Primary Planner: INCORRECT_REASONING. The recorded traceback identifies the import at
+  line 21, not test class or method naming.
+- Fallback Planner: INCORRECT_REASONING / SCOPE_EXPANSION. It proposed removing and
+  reimplementing required fixture symbols and omitted the required test commands.
+- Fast Candidate: FORMAT_FAILURE + BAD_PATCH + INCORRECT_IMPLEMENTATION. It is fenced,
+  corrupt at line 12, introduces invalid `import from` syntax, does not change the
+  failing import, deletes required imports/constants, and contains unrelated no-op edits.
+- Reviewer: FORMAT_FAILURE + FALSE_ACCEPT. It returned markdown instead of strict JSON
+  and claimed tests passed although no tests were run.
+
+REQUIRED REVISION
+- Address the deterministic baseline failure at this existing line:
+  `from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID`
+- Under `python -m unittest discover -s tests`, test modules are imported from the
+  supplied tests start directory and the package-qualified import above is unresolved.
+- Preserve `CodexFixture`, `SESSION_ID`, every other import, every constant, and all test
+  behavior. Do not copy or reimplement the fixture.
+- Change only `tests/test_v016_blocker_regressions.py`.
+- Make the smallest possible correction compatible with the discovery mode.
+- Output a raw unified diff only: no markdown fence, prose, test claims, cleanup, or
+  unrelated changes.
+
+REQUIRED VALIDATION (performed by the Harness after generation)
+- `git apply --check`
+- `python -m unittest discover -s tests -p test_v016_blocker_regressions.py -v`
+- `python -m unittest discover -s tests -v`

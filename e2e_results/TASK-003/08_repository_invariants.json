@@ -1,0 +1,41 @@
+{
+  "original": {
+    "path": "D:\\\\team_project_os\\\\team_project_os-main",
+    "head": {
+      "returncode": 0,
+      "stdout": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+      "stderr": ""
+    },
+    "branch": {
+      "returncode": 0,
+      "stdout": "main",
+      "stderr": ""
+    },
+    "status": {
+      "returncode": 0,
+      "stdout": "?? team_project_os-main.zip",
+      "stderr": ""
+    }
+  },
+  "worktree": {
+    "path": "D:\\\\AI_worker\\\\worktree\\\\team_project_os",
+    "head": {
+      "returncode": 0,
+      "stdout": "1ecbd8fa7d7a61e9b721dc115788ec52b1a37394",
+      "stderr": ""
+    },
+    "branch": {
+      "returncode": 0,
+      "stdout": "ai/team-project-os-improvement",
+      "stderr": ""
+    },
+    "status": {
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "baseline": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+  "original_non_pollution_pass": true,
+  "worktree_clean_after_commit": true
+}
