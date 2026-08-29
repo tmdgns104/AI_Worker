@@ -1,0 +1,60 @@
+# Research Log
+
+AI Worker의 가설, 실험, 실패, 관찰 결과를 시간순으로 기록한다.
+
+---
+
+## 2026-08-29 — R-001 Initial Direction
+
+### Question
+
+Codex를 Supervisor로 유지하면서 Local LLM을 사용해 Codex의 반복 작업량을 줄이고 장시간 개발을 지속할 수 있는가?
+
+### Starting Point
+
+현재 PC에 다음 Ollama 모델이 설치되어 있다.
+
+- command-r7b 7B Q4
+- mistral-nemo 12B Q3
+- qwen2.5-coder 14B Q3
+- qwen3.5 9B
+- qwen3 8B
+- qwen2.5-coder 7B
+- qwen3 4B
+
+### Hypothesis
+
+Local 모델에게 native agent 권한을 크게 주는 것보다 Harness가 Repository I/O와 orchestration을 담당하고 모델은 bounded/stateless Candidate 생성에 집중시키는 편이 작은 모델에서 더 안정적일 가능성이 높다.
+
+### Proposed Roles
+
+- Scout: 작은 빠른 모델
+- Planner: 일반 reasoning 모델
+- Coder: code-specialized 모델
+- Reviewer: Coder와 다른 계열 또는 더 강한 일반 모델
+- Escalation: 메모리 한계 내의 더 큰 모델
+- Supervisor: Codex
+
+### Important Constraint
+
+모델 선택은 고정하지 않는다. 무료이며 현재 PC에서 실용적으로 실행되는 모델 중 실제 Benchmark가 좋은 모델을 사용한다.
+
+### External Candidates To Test Later
+
+- DeepSeek-Coder-V2 Lite/16B 계열
+- Qwen3-Coder 30B 계열
+- Devstral 24B 계열
+
+이들은 설치 결정이 아니다. 현재 설치 모델 Benchmark에서 필요한 역할이 부족한 경우에만 다운로드/비교한다.
+
+### Next Experiment
+
+동일한 bounded Task packet을 현재 설치 모델들에 전달하여 다음을 측정한다.
+
+- 응답 시간
+- output format 준수율
+- patch syntax 성공률
+- task instruction 준수
+- Codex review 결과
+- revision 횟수
+- 최종 test pass 여부
