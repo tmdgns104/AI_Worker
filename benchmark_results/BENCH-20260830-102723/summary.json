@@ -1,0 +1,36 @@
+{
+  "models": [
+    {
+      "role": "escalation_coder",
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "slots": 4,
+      "request_successes": 4,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 21.25,
+      "mean_latency_seconds": 19.87,
+      "qualified": false
+    }
+  ],
+  "recommendations": {
+    "escalation_coder": {
+      "primary": null,
+      "fallback": null,
+      "best_observed": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "primary_qualified": false,
+      "reason": "hard gates 0/4, mean score 21.25, mean latency 19.87s"
+    }
+  },
+  "run_id": "BENCH-20260830-102723",
+  "suite_id": "team-project-os-escalation-qualification-v1",
+  "completed_at": "2026-08-30T01:28:51.855655+00:00",
+  "slot_count": 4,
+  "target_after": {
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "clean": true,
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1"
+    }
+  }
+}

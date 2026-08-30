@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
 import benchmark_runner
 
@@ -18,6 +20,21 @@ class SuiteValidationTests(unittest.TestCase):
         self.assertEqual(8, len(suite["cases"]))
         self.assertEqual(300, suite["runtime"]["timeout_seconds"])
         self.assertEqual(["qwen3:8b", "qwen3.5:9b"], suite["candidates"]["scout"])
+
+    def test_escalation_qualification_suite_is_valid(self):
+        suite = benchmark_runner.load_suite(ROOT / "benchmarks" / "escalation_suite_v1.json")
+
+        self.assertEqual("team-project-os-escalation-qualification-v1", suite["suite_id"])
+        self.assertEqual(4, len(suite["cases"]))
+        self.assertEqual(
+            {"minimal_feedback", "feedback_with_old_patch"},
+            {case["feedback_variant"] for case in suite["cases"]},
+        )
+
+        corrected = benchmark_runner.load_suite(
+            ROOT / "benchmarks" / "escalation_suite_v2.json"
+        )
+        self.assertTrue(all(case["allow_recount"] for case in corrected["cases"]))
 
     def test_duplicate_case_ids_are_rejected(self):
         suite = benchmark_runner.load_suite(ROOT / "benchmarks" / "suite_v2.json")
@@ -135,6 +152,89 @@ class DeterministicEvaluatorTests(unittest.TestCase):
         self.assertTrue(patch.startswith("diff --git"))
         self.assertFalse(strict)
         self.assertTrue(extractable)
+
+    def test_revision_evidence_detects_transport_normalized_repeat(self):
+        old = "```diff\ndiff --git a/a.py b/a.py\n--- a/a.py\n+++ b/a.py\n```\n"
+        candidate = "diff --git a/a.py b/a.py\n--- a/a.py\n+++ b/a.py\n"
+
+        evidence = benchmark_runner.patch_revision_evidence(candidate, old)
+
+        self.assertFalse(evidence["byte_identical_to_old"])
+        self.assertTrue(evidence["semantically_unchanged_from_old"])
+
+    def test_patch_size_counts_added_and_removed_lines(self):
+        case = {"max_added_lines": 1, "max_changed_lines": 2}
+        candidate = (
+            "diff --git a/a.py b/a.py\n--- a/a.py\n+++ b/a.py\n"
+            "@@ -1 +1 @@\n-old\n+new\n"
+        )
+
+        evidence = benchmark_runner.patch_size_evidence(case, candidate)
+
+        self.assertEqual(1, evidence["added_lines"])
+        self.assertEqual(1, evidence["removed_lines"])
+        self.assertEqual(2, evidence["changed_lines"])
+        self.assertTrue(evidence["within_limit"])
+
+    def test_opt_in_recount_repairs_only_hunk_counts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "target"
+            target.mkdir()
+            benchmark_runner.run_cmd(["git", "init", "--quiet"], cwd=target, check=True)
+            benchmark_runner.run_cmd(
+                ["git", "config", "user.email", "benchmark@example.invalid"],
+                cwd=target,
+                check=True,
+            )
+            benchmark_runner.run_cmd(
+                ["git", "config", "user.name", "Benchmark"], cwd=target, check=True
+            )
+            (target / "sample.py").write_text("old\n", encoding="utf-8")
+            benchmark_runner.run_cmd(["git", "add", "sample.py"], cwd=target, check=True)
+            benchmark_runner.run_cmd(
+                ["git", "commit", "--quiet", "-m", "baseline"], cwd=target, check=True
+            )
+            case = {
+                "allowed_files": ["sample.py"],
+                "required_patch_terms": ["new"],
+                "test_command": [
+                    "python",
+                    "-c",
+                    "from pathlib import Path; assert Path('sample.py').read_text() == 'new\\n'",
+                ],
+                "max_added_lines": 1,
+                "max_changed_lines": 2,
+                "allow_recount": True,
+                "ensure_test_package": False,
+            }
+            malformed_counts = (
+                "```diff\n"
+                "diff --git a/sample.py b/sample.py\n"
+                "--- a/sample.py\n"
+                "+++ b/sample.py\n"
+                "@@ -1,2 +1,2 @@\n"
+                "-old\n"
+                "+new\n"
+                "```"
+            )
+
+            result = benchmark_runner.evaluate_patch(case, malformed_counts, target, 85)
+
+        self.assertFalse(result["git_apply_strict"])
+        self.assertTrue(result["git_apply_recount"])
+        self.assertTrue(result["format_recounted"])
+        self.assertTrue(benchmark_runner.all_hard_gates_pass(result))
+
+    def test_minimal_escalation_prompt_omits_old_patch(self):
+        suite = benchmark_runner.load_suite(ROOT / "benchmarks" / "escalation_suite_v1.json")
+        case = next(case for case in suite["cases"] if case["case_id"] == "ESC-R001-MIN")
+
+        with patch.object(benchmark_runner, "render_context", return_value="bounded context"):
+            _system, user, context_chars = benchmark_runner.build_prompt(case, "escalation_coder", ROOT, [])
+
+        self.assertNotIn("OLD FAILED PATCH", user)
+        self.assertIn("SUPERVISOR FEEDBACK", user)
+        self.assertEqual(len("bounded context") + len(case["feedback"]), context_chars)
 
     def test_unqualified_model_is_not_reported_as_primary(self):
         result = {

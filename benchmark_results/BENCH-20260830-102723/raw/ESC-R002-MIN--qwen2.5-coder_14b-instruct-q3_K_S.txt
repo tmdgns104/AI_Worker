@@ -1,0 +1,36 @@
+```diff
+diff --git a/tests/test_v016_blocker_regressions.py b/tests/test_v016_blocker_regressions.py
+index 1234567..89abcde 100644
+--- a/tests/test_v016_blocker_regressions.py
++++ b/tests/test_v016_blocker_regressions.py
+@@ -41,6 +41,28 @@ class V016BlockerUnitTests(unittest.TestCase):
+                 self.assertEqual(changed[0].message_count, first[0].message_count + 1)
+ 
+     def test_message_chunk_is_contiguous_and_bounded(self):
++        # Test for first eligible oversized message is selected and total remains 1
++        oversized_message = ConversationMessage(cursor=1, role="user", content="x" * 10000, token="token1")
++        small_message = ConversationMessage(cursor=2, role="user", content="x" * 10, token="token2")
++        messages = [oversized_message, small_message]
++
++        selected, total = select_message_chunk(
++            messages,
++            after_cursor=0,
++            max_messages=1,
++            max_characters=10000,
++        )
++        self.assertEqual([item.cursor for item in selected], [1])
++        self.assertEqual(total, 2)
++
++        selected, total = select_message_chunk(
++            messages,
++            after_cursor=0,
++            max_messages=1,
++            max_characters=10,
++        )
++        self.assertEqual([item.cursor for item in selected], [1])
++        self.assertEqual(total, 2)
++
+         messages = [
+             ConversationMessage(cursor, "user", "x" * 10, "")
+             for cursor in range(1, 7)
+```

@@ -115,3 +115,26 @@ Benchmark v1 exposed an evaluator false pass and a broken test command. Benchmar
 then showed that no installed model universally qualified for Scout, Planner, Coder, or
 Reviewer, while Qwen 14B did qualify as feedback-driven Escalation Coder. Pretending the
 highest unqualified score is a safe default would violate ADR-006.
+
+---
+
+## ADR-009 — Escalation qualification requires multiple cases; recount is opt-in
+
+**Status:** ACCEPTED
+
+A Local escalation model is not a default route until it passes every hard gate on at
+least two representative cases. One benchmark pass is case-scoped evidence only. After
+TASK-004, Qwen 14B remains installed as a research Candidate but is removed from the
+default Coder fallback because it passed 0/4 strict and 1/4 recount-normalized slots.
+
+The Harness may opt into `git apply --recount` only after standard apply fails and only
+for an extractable patch. It records strict and recounted apply separately, then still
+requires allowed paths, semantic required terms, diff-size bounds, and exact focused
+tests. Recount success cannot compensate for a semantic or test failure.
+
+### Reason
+
+TASK-004 found one logically correct Candidate whose only defect was malformed hunk
+counts; deterministic recount plus exact tests recovered it. Three other Candidates still
+failed context, requirement, size, or test gates. This supports narrow repair while
+rejecting both false qualification and blanket patch rewriting.

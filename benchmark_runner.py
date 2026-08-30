@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 import datetime as dt
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -211,16 +212,25 @@ def build_prompt(case: dict, role: str, target_repo: Path, files: list[str]) -> 
         return system, user, len(context) + len(patch)
     if role == "escalation_coder":
         old_patch = (ROOT / case["old_patch"]).read_text(encoding="utf-8")
+        include_old_patch = case.get("include_old_patch", True)
         system = (
             f"You are a bounded escalation coding Worker. {boundary} Output only a complete "
             "replacement unified diff for git apply, without markdown fences or explanation. "
             "Address the supervisor feedback and never claim tests were executed."
         )
-        user = (
-            f"CASE: {case['case_id']}\nTASK:\n{case['task']}\n\nSUPERVISOR FEEDBACK:\n"
-            f"{case['feedback']}\n\nOLD FAILED PATCH:\n{old_patch}\n\nBOUNDED CONTEXT:\n{context}"
-        )
-        return system, user, len(context) + len(old_patch) + len(case["feedback"])
+        sections = [
+            f"CASE: {case['case_id']}",
+            f"TASK:\n{case['task']}",
+            f"SUPERVISOR FEEDBACK:\n{case['feedback']}",
+        ]
+        if include_old_patch:
+            sections.append(f"OLD FAILED PATCH:\n{old_patch}")
+        sections.append(f"BOUNDED CONTEXT:\n{context}")
+        user = "\n\n".join(sections)
+        context_chars = len(context) + len(case["feedback"])
+        if include_old_patch:
+            context_chars += len(old_patch)
+        return system, user, context_chars
     raise ValueError(f"unsupported role: {role}")
 
 
@@ -317,6 +327,10 @@ def patch_added_lines(patch: str) -> int:
     return sum(1 for line in patch.splitlines() if line.startswith("+") and not line.startswith("+++"))
 
 
+def patch_removed_lines(patch: str) -> int:
+    return sum(1 for line in patch.splitlines() if line.startswith("-") and not line.startswith("---"))
+
+
 def extract_patch(raw: str) -> tuple[str, bool, bool]:
     """Extract one whole fenced diff while preserving strict-format evidence."""
     stripped = raw.strip()
@@ -330,11 +344,48 @@ def extract_patch(raw: str) -> tuple[str, bool, bool]:
     return extracted + "\n", False, extracted.startswith("diff --git ")
 
 
+def normalized_patch(patch: str) -> str:
+    """Normalize only transport formatting, not code content or indentation."""
+    extracted, _strict, _extractable = extract_patch(patch)
+    return "\n".join(line.rstrip() for line in extracted.strip().splitlines())
+
+
+def patch_revision_evidence(candidate_raw: str, old_raw: str) -> dict:
+    candidate_bytes = candidate_raw.strip().encode("utf-8")
+    old_bytes = old_raw.strip().encode("utf-8")
+    return {
+        "candidate_sha256": hashlib.sha256(candidate_bytes).hexdigest(),
+        "old_patch_sha256": hashlib.sha256(old_bytes).hexdigest(),
+        "byte_identical_to_old": candidate_bytes == old_bytes,
+        "semantically_unchanged_from_old": normalized_patch(candidate_raw)
+        == normalized_patch(old_raw),
+    }
+
+
+def patch_size_evidence(case: dict, patch: str) -> dict:
+    added_lines = patch_added_lines(patch)
+    removed_lines = patch_removed_lines(patch)
+    changed_lines = added_lines + removed_lines
+    return {
+        "added_lines": added_lines,
+        "removed_lines": removed_lines,
+        "changed_lines": changed_lines,
+        "within_limit": added_lines <= case["max_added_lines"]
+        and changed_lines <= case.get("max_changed_lines", float("inf")),
+    }
+
+
 def evaluate_patch(case: dict, raw: str, target_repo: Path, minimum: int) -> dict:
     patch, strict_patch_format, patch_extractable = extract_patch(raw)
     required_terms = [term for term in case["required_patch_terms"] if term not in patch]
-    added_lines = patch_added_lines(patch)
+    size = patch_size_evidence(case, patch)
+    revision = None
+    if case.get("old_patch"):
+        old_raw = (ROOT / case["old_patch"]).read_text(encoding="utf-8")
+        revision = patch_revision_evidence(raw, old_raw)
     apply_ok = False
+    strict_apply_ok = False
+    recount_apply_ok = False
     changed_files = []
     test_exit_code = None
     test_output = ""
@@ -355,9 +406,25 @@ def evaluate_patch(case: dict, raw: str, target_repo: Path, minimum: int) -> dic
             patch_path.write_text(patch, encoding="utf-8")
             checked = run_cmd(["git", "apply", "--check", str(patch_path)], cwd=evaluation_repo)
             apply_output = (checked.stdout + checked.stderr).strip()
-            apply_ok = checkout.returncode == 0 and checked.returncode == 0
+            strict_apply_ok = checkout.returncode == 0 and checked.returncode == 0
+            apply_ok = strict_apply_ok
+            apply_args = ["git", "apply", str(patch_path)]
+            if not apply_ok and patch_extractable and case.get("allow_recount", False):
+                recounted = run_cmd(
+                    ["git", "apply", "--recount", "--check", str(patch_path)],
+                    cwd=evaluation_repo,
+                )
+                recount_apply_ok = checkout.returncode == 0 and recounted.returncode == 0
+                apply_ok = recount_apply_ok
+                apply_args = ["git", "apply", "--recount", str(patch_path)]
+                apply_output = (
+                    apply_output
+                    + "\n[recount]\n"
+                    + recounted.stdout
+                    + recounted.stderr
+                ).strip()
             if apply_ok:
-                applied = run_cmd(["git", "apply", str(patch_path)], cwd=evaluation_repo)
+                applied = run_cmd(apply_args, cwd=evaluation_repo)
                 apply_ok = applied.returncode == 0
                 apply_output = (apply_output + "\n" + applied.stdout + applied.stderr).strip()
             if apply_ok:
@@ -365,7 +432,8 @@ def evaluate_patch(case: dict, raw: str, target_repo: Path, minimum: int) -> dic
                     ["git", "diff", "--name-only"], cwd=evaluation_repo, check=True
                 ).stdout
                 changed_files = [line.strip().replace("\\", "/") for line in changed_output.splitlines()]
-                (evaluation_repo / "tests" / "__init__.py").touch()
+                if case.get("ensure_test_package", True):
+                    (evaluation_repo / "tests" / "__init__.py").touch()
                 tested = run_cmd(case["test_command"], cwd=evaluation_repo)
                 test_exit_code = tested.returncode
                 test_output = (tested.stdout + tested.stderr)[-4000:]
@@ -373,7 +441,10 @@ def evaluate_patch(case: dict, raw: str, target_repo: Path, minimum: int) -> dic
     allowed = set(case["allowed_files"])
     disallowed = [path for path in changed_files if path not in allowed]
     terms_ok = not required_terms
-    size_ok = added_lines <= case["max_added_lines"]
+    size_ok = size["within_limit"]
+    meaningful_revision = not (
+        revision and revision["semantically_unchanged_from_old"]
+    )
     test_ok = test_exit_code == 0
     score = round(
         20 * apply_ok
@@ -390,17 +461,24 @@ def evaluate_patch(case: dict, raw: str, target_repo: Path, minimum: int) -> dic
         "allowed_files_only": apply_ok and bool(changed_files) and not disallowed,
         "required_patch_terms": terms_ok,
         "focused_test": test_ok,
+        "diff_size": size_ok,
         "minimum_score": score >= minimum,
     }
+    if case.get("require_revision_change"):
+        hard_gates["meaningful_revision"] = meaningful_revision
     return {
         "schema_valid": patch_extractable,
         "strict_schema_valid": strict_patch_format,
         "format_normalized": patch_extractable and not strict_patch_format,
         "hallucination_count": len(disallowed),
         "git_apply_check": apply_ok,
+        "git_apply_strict": strict_apply_ok,
+        "git_apply_recount": recount_apply_ok,
+        "format_recounted": apply_ok and not strict_apply_ok and recount_apply_ok,
         "changed_files": changed_files,
         "missing_patch_terms": required_terms,
-        "added_lines": added_lines,
+        **size,
+        "revision": revision,
         "test_result": "PASS" if test_ok else "FAIL" if test_exit_code is not None else "NOT_RUN",
         "test_exit_code": test_exit_code,
         "test_output": test_output,
@@ -627,6 +705,8 @@ def run_benchmark(
                     "request_success": False,
                     "latency_seconds": 0.0,
                     "failure_reason": "",
+                    "feedback_variant": case.get("feedback_variant"),
+                    "include_old_patch": case.get("include_old_patch"),
                 }
                 try:
                     request_started = time.perf_counter()

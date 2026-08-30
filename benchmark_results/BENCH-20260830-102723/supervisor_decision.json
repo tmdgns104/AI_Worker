@@ -1,0 +1,49 @@
+{
+  "decision_version": 1,
+  "run_id": "BENCH-20260830-102723",
+  "suite_v1": "team-project-os-escalation-qualification-v1",
+  "suite_v2_replay": "team-project-os-escalation-qualification-v2",
+  "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+  "model_digest": "ff7e2b2086f712b6825d425ef5258234de6814b69cf4cf8b52cebcfef5a5396a",
+  "decision": "NO_QUALIFIED_ESCALATION_MODEL",
+  "strict_run": {
+    "model_calls": 4,
+    "retries": 0,
+    "hard_gate_passes": 0,
+    "slots": 4,
+    "mean_score": 21.25,
+    "summed_latency_seconds": 79.472
+  },
+  "recount_replay": {
+    "model_calls": 0,
+    "raw_reused": true,
+    "hard_gate_passes": 1,
+    "slots": 4,
+    "qualified": false,
+    "salvaged_case": "ESC-R002-OLD"
+  },
+  "variant_comparison": {
+    "minimal_feedback": {
+      "strict_hard_gate_passes": 0,
+      "slots": 2,
+      "strict_mean_score": 5.0,
+      "mean_latency_seconds": 24.058,
+      "recount_hard_gate_passes": 0
+    },
+    "feedback_with_old_patch": {
+      "strict_hard_gate_passes": 0,
+      "slots": 2,
+      "strict_mean_score": 37.5,
+      "mean_latency_seconds": 15.678,
+      "recount_hard_gate_passes": 1
+    }
+  },
+  "routing": {
+    "default_escalation_primary": null,
+    "research_candidate": "qwen2.5-coder:14b-instruct-q3_K_S",
+    "takeover": "Codex after one rejected fast Candidate",
+    "reason": "Zero of four strict slots and one of four recount-normalized slots passed all hard gates."
+  },
+  "target_invariants": "PASS",
+  "next_task": "TASK-005 — Structured edit Candidate experiment"
+}

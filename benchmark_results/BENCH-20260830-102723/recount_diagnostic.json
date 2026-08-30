@@ -1,0 +1,188 @@
+{
+  "diagnostic_version": 1,
+  "source_generation_run": "BENCH-20260830-102723",
+  "suite_id": "team-project-os-escalation-qualification-v2",
+  "model_calls": 0,
+  "raw_reused": true,
+  "result_count": 4,
+  "hard_gate_passes": 1,
+  "qualified": false,
+  "results": [
+    {
+      "case_id": "ESC-R001-MIN",
+      "feedback_variant": "minimal_feedback",
+      "include_old_patch": false,
+      "hard_pass": false,
+      "schema_valid": true,
+      "strict_schema_valid": false,
+      "format_normalized": true,
+      "hallucination_count": 0,
+      "git_apply_check": false,
+      "git_apply_strict": false,
+      "git_apply_recount": false,
+      "format_recounted": false,
+      "changed_files": [],
+      "missing_patch_terms": [
+        "from test_conversation_import_v016 import CodexFixture, SESSION_ID"
+      ],
+      "added_lines": 1,
+      "removed_lines": 1,
+      "changed_lines": 2,
+      "within_limit": true,
+      "revision": {
+        "candidate_sha256": "8b62ac4df45e04ea6d9b222a07d4e236819c5961c6b27f907d7b34633f7b60f5",
+        "old_patch_sha256": "65610ec84f64d0c0dc7ddc5f67f708da95a5472e028a63f5b983127febc22272",
+        "byte_identical_to_old": false,
+        "semantically_unchanged_from_old": false
+      },
+      "test_result": "NOT_RUN",
+      "test_exit_code": null,
+      "test_output": "",
+      "apply_output": "error: corrupt patch at line 13\n[recount]\nerror: patch failed: tests/test_v016_blocker_regressions.py:15\nerror: tests/test_v016_blocker_regressions.py: patch does not apply",
+      "score": 10,
+      "hard_gates": {
+        "patch_extractable": true,
+        "git_apply_check": false,
+        "allowed_files_only": false,
+        "required_patch_terms": false,
+        "focused_test": false,
+        "diff_size": true,
+        "minimum_score": false,
+        "meaningful_revision": true
+      }
+    },
+    {
+      "case_id": "ESC-R001-OLD",
+      "feedback_variant": "feedback_with_old_patch",
+      "include_old_patch": true,
+      "hard_pass": false,
+      "schema_valid": true,
+      "strict_schema_valid": false,
+      "format_normalized": true,
+      "hallucination_count": 0,
+      "git_apply_check": true,
+      "git_apply_strict": true,
+      "git_apply_recount": false,
+      "format_recounted": false,
+      "changed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "missing_patch_terms": [
+        "from test_conversation_import_v016 import CodexFixture, SESSION_ID"
+      ],
+      "added_lines": 1,
+      "removed_lines": 0,
+      "changed_lines": 1,
+      "within_limit": true,
+      "revision": {
+        "candidate_sha256": "35ba4e6e7a4095293c65b1892beee3025dd3a327eb021546f7bd900c05ad6029",
+        "old_patch_sha256": "65610ec84f64d0c0dc7ddc5f67f708da95a5472e028a63f5b983127febc22272",
+        "byte_identical_to_old": false,
+        "semantically_unchanged_from_old": false
+      },
+      "test_result": "FAIL",
+      "test_exit_code": 1,
+      "test_output": "test_v016_blocker_regressions (unittest.loader._FailedTest.test_v016_blocker_regressions) ... ERROR\n\n======================================================================\nERROR: test_v016_blocker_regressions (unittest.loader._FailedTest.test_v016_blocker_regressions)\n----------------------------------------------------------------------\nImportError: Failed to import test module: test_v016_blocker_regressions\nTraceback (most recent call last):\n  File \"C:\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"C:\\Users\\user\\AppData\\Local\\Temp\\ai-worker-benchmark-qiuzi_gk\\target\\tests\\test_v016_blocker_regressions.py\", line 22, in <module>\n    from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID\nModuleNotFoundError: No module named 'tests.test_conversation_import_v016'\n\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "apply_output": "",
+      "score": 50,
+      "hard_gates": {
+        "patch_extractable": true,
+        "git_apply_check": true,
+        "allowed_files_only": true,
+        "required_patch_terms": false,
+        "focused_test": false,
+        "diff_size": true,
+        "minimum_score": false,
+        "meaningful_revision": true
+      }
+    },
+    {
+      "case_id": "ESC-R002-MIN",
+      "feedback_variant": "minimal_feedback",
+      "include_old_patch": false,
+      "hard_pass": false,
+      "schema_valid": true,
+      "strict_schema_valid": false,
+      "format_normalized": true,
+      "hallucination_count": 0,
+      "git_apply_check": true,
+      "git_apply_strict": false,
+      "git_apply_recount": true,
+      "format_recounted": true,
+      "changed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "missing_patch_terms": [
+        "test_first_oversized_message_is_selected_for_progress"
+      ],
+      "added_lines": 23,
+      "removed_lines": 0,
+      "changed_lines": 23,
+      "within_limit": false,
+      "revision": {
+        "candidate_sha256": "0bd2ffc5a92e879630f4d25b4441f1d222dfa509475bd5c4826b0582cfbed65c",
+        "old_patch_sha256": "1943539af7fc041bdea9d160f984218e9ab509bc23a3cb7b9bff27671b52e1e8",
+        "byte_identical_to_old": false,
+        "semantically_unchanged_from_old": false
+      },
+      "test_result": "FAIL",
+      "test_exit_code": 1,
+      "test_output": "test_first_oversized_message_is_selected_for_progress (unittest.loader._FailedTest.test_first_oversized_message_is_selected_for_progress) ... ERROR\n\n======================================================================\nERROR: test_first_oversized_message_is_selected_for_progress (unittest.loader._FailedTest.test_first_oversized_message_is_selected_for_progress)\n----------------------------------------------------------------------\nAttributeError: type object 'V016BlockerUnitTests' has no attribute 'test_first_oversized_message_is_selected_for_progress'\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (errors=1)\n",
+      "apply_output": "error: corrupt patch at line 35\n[recount]",
+      "score": 40,
+      "hard_gates": {
+        "patch_extractable": true,
+        "git_apply_check": true,
+        "allowed_files_only": true,
+        "required_patch_terms": false,
+        "focused_test": false,
+        "diff_size": false,
+        "minimum_score": false,
+        "meaningful_revision": true
+      }
+    },
+    {
+      "case_id": "ESC-R002-OLD",
+      "feedback_variant": "feedback_with_old_patch",
+      "include_old_patch": true,
+      "hard_pass": true,
+      "schema_valid": true,
+      "strict_schema_valid": false,
+      "format_normalized": true,
+      "hallucination_count": 0,
+      "git_apply_check": true,
+      "git_apply_strict": false,
+      "git_apply_recount": true,
+      "format_recounted": true,
+      "changed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "missing_patch_terms": [],
+      "added_lines": 14,
+      "removed_lines": 0,
+      "changed_lines": 14,
+      "within_limit": true,
+      "revision": {
+        "candidate_sha256": "58180fa12c6bd42015caf973e7ac1e0516ad6506a9120492b8ebe6b957f6ebdc",
+        "old_patch_sha256": "1943539af7fc041bdea9d160f984218e9ab509bc23a3cb7b9bff27671b52e1e8",
+        "byte_identical_to_old": false,
+        "semantically_unchanged_from_old": false
+      },
+      "test_result": "PASS",
+      "test_exit_code": 0,
+      "test_output": "test_first_oversized_message_is_selected_for_progress (tests.test_v016_blocker_regressions.V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nOK\n",
+      "apply_output": "error: corrupt patch at line 24\n[recount]",
+      "score": 95,
+      "hard_gates": {
+        "patch_extractable": true,
+        "git_apply_check": true,
+        "allowed_files_only": true,
+        "required_patch_terms": true,
+        "focused_test": true,
+        "diff_size": true,
+        "minimum_score": true,
+        "meaningful_revision": true
+      }
+    }
+  ]
+}

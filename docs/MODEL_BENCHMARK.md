@@ -175,3 +175,34 @@ Escalation:  benchmark-qualified on ESC-001 only; real E2E qualification FAILED
 No external model is downloaded yet. The next highest-value experiment is to fix the
 feedback/evaluation contract and run multiple frozen escalation cases before attributing
 the failure to insufficient model capacity.
+
+## BENCH-20260830-102723 — Escalation Qualification
+
+Frozen runtime: Qwen 14B Q3_K_S, digest `ff7e2b...a5396a`, temperature 0, seed 42,
+8192 context, timeout 300 s, repetition 1, retry 0, sequential loopback Ollama.
+
+| Case | Packet | Score | Latency | Strict apply | Exact test | Hard PASS |
+|---|---|---:|---:|---|---|---|
+| ESC-R001-MIN | minimal feedback | 10 | 21.194s | FAIL | not run | FAIL |
+| ESC-R001-OLD | feedback + old patch | 50 | 12.809s | PASS | FAIL | FAIL |
+| ESC-R002-MIN | minimal feedback | 0 | 26.922s | FAIL | not run | FAIL |
+| ESC-R002-OLD | feedback + old patch | 25 | 18.547s | FAIL | not run | FAIL |
+
+Strict result: `0/4`, mean score 21.25, mean latency 19.87 s. The Target baseline
+HEAD, hashes, and clean state passed before and after.
+
+Evaluator v2 replayed the exact raw with no model calls and opt-in hunk recount. It
+recovered ESC-R002-OLD, which changed only the test file and passed the exact test at 95.
+Final replay result: `1/4`; still not qualified.
+
+### Updated Routing
+
+```text
+Coder:       qwen2.5-coder:7b optional fast Candidate -> deterministic gates -> Codex
+Escalation:  no qualified default
+Research:    qwen2.5-coder:14b may be tested only under multi-case hard gates
+Reviewer:    unchanged conditional split; never authoritative
+```
+
+No model was downloaded. The next experiment targets output-contract reliability before
+introducing another model variable.

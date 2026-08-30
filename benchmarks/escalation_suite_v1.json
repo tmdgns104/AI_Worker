@@ -1,0 +1,140 @@
+{
+  "suite_id": "team-project-os-escalation-qualification-v1",
+  "schema_version": 1,
+  "source": {
+    "repository": "team_project_os",
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "reviewed_at": "2026-08-30",
+    "provenance": "User-owned local Target repository; TASK-003 and TASK-002 frozen evidence",
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1"
+    }
+  },
+  "runtime": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 8192,
+    "timeout_seconds": 300,
+    "repetitions": 1,
+    "retries": 0,
+    "execution": "sequential",
+    "fallback": "none"
+  },
+  "minimum_scores": {
+    "escalation_coder": 85
+  },
+  "candidates": {
+    "escalation_coder": [
+      "qwen2.5-coder:14b-instruct-q3_K_S"
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "ESC-R001-MIN",
+      "role": "escalation_coder",
+      "feedback_variant": "minimal_feedback",
+      "include_old_patch": false,
+      "task": "Fix the unittest discovery import failure in tests/test_v016_blocker_regressions.py. Preserve every imported symbol and all test behavior. Change only that file and output a complete replacement unified diff.",
+      "context": [
+        {"path": "tests/test_v016_blocker_regressions.py", "start_line": 15, "end_line": 25}
+      ],
+      "old_patch": "e2e_results/TASK-003/pipeline/candidate_fast.patch",
+      "feedback": "Failure=ModuleNotFoundError at the package-qualified sibling-test import under python -m unittest discover -s tests. Required=minimal import correction compatible with discovery. Preserve CodexFixture, SESSION_ID, every other import, constants, and tests. Forbidden=fixture copying, cleanup, production changes, package-layout changes.",
+      "allowed_files": ["tests/test_v016_blocker_regressions.py"],
+      "required_patch_terms": [
+        "from test_conversation_import_v016 import CodexFixture, SESSION_ID"
+      ],
+      "test_command": [
+        "python", "-m", "unittest", "discover", "-s", "tests", "-p",
+        "test_v016_blocker_regressions.py", "-v"
+      ],
+      "ensure_test_package": false,
+      "max_added_lines": 1,
+      "max_changed_lines": 2,
+      "require_revision_change": true
+    },
+    {
+      "case_id": "ESC-R001-OLD",
+      "role": "escalation_coder",
+      "feedback_variant": "feedback_with_old_patch",
+      "include_old_patch": true,
+      "task": "Fix the unittest discovery import failure in tests/test_v016_blocker_regressions.py. Preserve every imported symbol and all test behavior. Change only that file and output a complete replacement unified diff.",
+      "context": [
+        {"path": "tests/test_v016_blocker_regressions.py", "start_line": 15, "end_line": 25}
+      ],
+      "old_patch": "e2e_results/TASK-003/pipeline/candidate_fast.patch",
+      "feedback": "Failure=ModuleNotFoundError at the package-qualified sibling-test import under python -m unittest discover -s tests. Required=minimal import correction compatible with discovery. Preserve CodexFixture, SESSION_ID, every other import, constants, and tests. Forbidden=fixture copying, cleanup, production changes, package-layout changes.",
+      "allowed_files": ["tests/test_v016_blocker_regressions.py"],
+      "required_patch_terms": [
+        "from test_conversation_import_v016 import CodexFixture, SESSION_ID"
+      ],
+      "test_command": [
+        "python", "-m", "unittest", "discover", "-s", "tests", "-p",
+        "test_v016_blocker_regressions.py", "-v"
+      ],
+      "ensure_test_package": false,
+      "max_added_lines": 1,
+      "max_changed_lines": 2,
+      "require_revision_change": true
+    },
+    {
+      "case_id": "ESC-R002-MIN",
+      "role": "escalation_coder",
+      "feedback_variant": "minimal_feedback",
+      "include_old_patch": false,
+      "task": "Add the missing test-only regression for first-message progress in tests/test_v016_blocker_regressions.py. Change no production file and output a complete replacement unified diff.",
+      "context": [
+        {"path": "tests/test_v016_blocker_regressions.py", "start_line": 1, "end_line": 90},
+        {"path": "app/conversation_import.py", "start_line": 97, "end_line": 128}
+      ],
+      "old_patch": "benchmarks/fixtures/esc_001_failed.patch",
+      "feedback": "Failure=the rejected test encoded an empty chunk that can stall cursor progress. Required=test_first_oversized_message_is_selected_for_progress must assert the first eligible oversized message is selected and total remains 1. Scope=test file only.",
+      "allowed_files": ["tests/test_v016_blocker_regressions.py"],
+      "required_patch_terms": [
+        "test_first_oversized_message_is_selected_for_progress",
+        "select_message_chunk",
+        "max_characters",
+        "assertEqual"
+      ],
+      "test_command": [
+        "python", "-m", "unittest",
+        "tests.test_v016_blocker_regressions.V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "-v"
+      ],
+      "ensure_test_package": true,
+      "max_added_lines": 18,
+      "max_changed_lines": 20,
+      "require_revision_change": true
+    },
+    {
+      "case_id": "ESC-R002-OLD",
+      "role": "escalation_coder",
+      "feedback_variant": "feedback_with_old_patch",
+      "include_old_patch": true,
+      "task": "Add the missing test-only regression for first-message progress in tests/test_v016_blocker_regressions.py. Change no production file and output a complete replacement unified diff.",
+      "context": [
+        {"path": "tests/test_v016_blocker_regressions.py", "start_line": 1, "end_line": 90},
+        {"path": "app/conversation_import.py", "start_line": 97, "end_line": 128}
+      ],
+      "old_patch": "benchmarks/fixtures/esc_001_failed.patch",
+      "feedback": "Failure=the rejected test encoded an empty chunk that can stall cursor progress. Required=test_first_oversized_message_is_selected_for_progress must assert the first eligible oversized message is selected and total remains 1. Scope=test file only.",
+      "allowed_files": ["tests/test_v016_blocker_regressions.py"],
+      "required_patch_terms": [
+        "test_first_oversized_message_is_selected_for_progress",
+        "select_message_chunk",
+        "max_characters",
+        "assertEqual"
+      ],
+      "test_command": [
+        "python", "-m", "unittest",
+        "tests.test_v016_blocker_regressions.V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "-v"
+      ],
+      "ensure_test_package": true,
+      "max_added_lines": 18,
+      "max_changed_lines": 20,
+      "require_revision_change": true
+    }
+  ]
+}

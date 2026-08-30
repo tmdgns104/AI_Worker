@@ -177,3 +177,46 @@ Target edits were recorded as 1 rather than hidden.
 
 TASK-004 must improve and re-qualify the escalation feedback contract using this fixed
 failure case before a second, harder Target E2E attempt.
+
+---
+
+## 2026-08-30 — D-005 Escalation Qualification Harness
+
+### Task
+
+Freeze the TASK-003 escalation failure, compare feedback packet variants on two cases,
+add deterministic revision/diff gates, and either qualify or reject the 14B route.
+
+### Changed
+
+- Added escalation qualification suites v1/v2 with four frozen slots.
+- Added optional old-Candidate prompt inclusion and explicit CLI Target baseline routing.
+- Added SHA/normalized revision comparison, added/removed/changed-line metrics, revision
+  and diff-size hard gates, and optional test-package setup.
+- Added opt-in `git apply --recount` fallback with separate strict/recount metrics and no
+  relaxation of path, semantic, size, or exact-test gates.
+- Added five focused evaluator tests; suite total rises from 15 to 20 tests.
+- Executed and retained actual Local Model raw/results plus a zero-call v2 replay.
+- Demoted 14B escalation to research-only and removed it from default Coder fallback.
+
+### Verification
+
+- Gold R001/R002 Candidate calibration — 100/95, all hard gates PASS
+- Actual v1 run — 4/4 requests, target before/after invariant PASS
+- Strict model qualification — FAIL, 0/4
+- v2 recount replay — 1/4; qualification remains FAIL
+- Focused evaluator tests — 15/15 PASS after one recorded test-command correction
+- Python compile and suite load — PASS
+- Final full tests/Doctor/JSON/diff checks — recorded in completion verification
+
+### Result
+
+Harness improvement PASS; model qualification FAIL. The experiment prevents a false
+default escalation claim while recovering one format-only patch safely.
+
+### Remaining
+
+Unified diff generation remains unreliable. TASK-005 will test structured exact
+replacement output and deterministic patch assembly before considering a new model.
+Three ignored TASK-004 disposable directories remain under `state/` because recursive
+cleanup was blocked by the execution policy; no tracked or Target state depends on them.

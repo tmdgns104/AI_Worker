@@ -24,8 +24,8 @@
     "coder": {
       "status": "UNQUALIFIED_FAST_ATTEMPT",
       "primary": "qwen2.5-coder:7b",
-      "fallback": "qwen2.5-coder:14b-instruct-q3_K_S",
-      "gate": "Never apply automatically; require patch extraction, git apply check, allowed-file check, and focused test."
+      "fallback": null,
+      "gate": "Never apply automatically; require patch extraction, git apply check, allowed-file check, and focused test. After rejection, use Codex takeover unless running an explicit qualification experiment."
     },
     "reviewer": {
       "status": "CONDITIONAL_SPLIT",
@@ -35,10 +35,11 @@
       "gate": "Use 14B for filesystem/security review; no single tested reviewer passed both defect classes."
     },
     "escalation_coder": {
-      "status": "QUALIFIED_ONE_CASE",
-      "primary": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "status": "UNQUALIFIED_RESEARCH_ONLY",
+      "primary": null,
       "fallback": null,
-      "gate": "Require explicit supervisor feedback plus the same apply/path/test hard gates."
+      "candidate_model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "gate": "Do not use in the default flow. Qualification experiments require multiple cases plus apply/path/exact-test/revision/diff-size hard gates."
     }
   },
   "experimental": [

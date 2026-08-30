@@ -312,13 +312,13 @@ def make_run_id(prefix="RUN"):
     return f"{prefix}-{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
 
-def benchmark(models=None, *, roles=None, suite_path=None):
+def benchmark(models=None, *, roles=None, suite_path=None, target_repo=None):
     """Run the versioned role benchmark without modifying the Target worktree."""
     from benchmark_runner import run_benchmark
 
     return run_benchmark(
         suite_path=Path(suite_path) if suite_path else ROOT / "benchmarks" / "suite_v2.json",
-        target_repo=repo(),
+        target_repo=Path(target_repo) if target_repo else repo(),
         ollama_url=MODEL_CFG["ollama_url"],
         model_filter=models,
         role_filter=roles,
@@ -486,6 +486,7 @@ def main():
     p_bench.add_argument("models", nargs="*")
     p_bench.add_argument("--roles", nargs="*")
     p_bench.add_argument("--suite")
+    p_bench.add_argument("--target-repo")
 
     p_run = sub.add_parser("run")
     p_run.add_argument("task")
@@ -501,7 +502,12 @@ def main():
     elif ns.cmd == "status":
         status()
     elif ns.cmd == "benchmark":
-        benchmark(ns.models or None, roles=ns.roles or None, suite_path=ns.suite)
+        benchmark(
+            ns.models or None,
+            roles=ns.roles or None,
+            suite_path=ns.suite,
+            target_repo=ns.target_repo,
+        )
     elif ns.cmd == "run":
         run_task(ns.task)
     elif ns.cmd == "revise":

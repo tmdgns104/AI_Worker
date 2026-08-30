@@ -231,3 +231,59 @@ test feedback packet ordering/content instead of simply adding more context.
 TASK-004 will freeze this failure as an escalation regression case, compare minimal
 failure feedback against feedback plus the full prior patch, add semantic/minimal-diff
 gates, and re-qualify the escalation route before attempting a harder Target change.
+
+---
+
+## 2026-08-30 — R-006 Escalation Packet and Patch-Normalization Experiment
+
+### Hypothesis
+
+Qwen 14B may recover TASK-003 when given a smaller structured failure packet without the
+large rejected patch. If hunk-count formatting is the remaining issue, narrow recount
+normalization plus exact tests may safely recover otherwise correct Candidates.
+
+### Conditions
+
+- Suite v1: two fixed cases, each with minimal-feedback and feedback-plus-old-patch
+  variants; four sequential calls
+- Model: `qwen2.5-coder:14b-instruct-q3_K_S`, digest `ff7e2b...a5396a`, Q3_K_S
+- Runtime: loopback Ollama, temperature 0, seed 42, context 8192, timeout 300 s,
+  repetition 1, retry 0
+- Baseline: disposable clean clone at `3c05219`; model had no repository tools
+- Hard gates: patch extraction, apply, allowed path, required terms, exact focused test,
+  changed-line bound, meaningful revision, score 85
+- Gold calibration: known correct R001/R002 patches passed at 100/95 before generation
+
+### Result
+
+- Strict v1: 4/4 requests completed, 79.472 s summed latency, 0/4 hard-gate PASS,
+  mean score 21.25.
+- Minimal feedback: 0/2, mean score 5.0, mean latency 24.058 s.
+- Old patch included: 0/2, mean score 37.5, mean latency 15.678 s.
+- Ollama observed 8.4 GB runtime with 26%/74% CPU/GPU and 8192 context.
+- Opt-in recount v2 replay reused the same raw with zero calls and recovered R002-OLD;
+  it applied, changed only the allowed test file, and passed the exact test at score 95.
+- Final v2 replay: 1/4 hard-gate PASS; model remained unqualified.
+
+### Failure Slices
+
+- R001 minimal: relative import plus wrong hunk context; recount could not apply it.
+- R001 old-patch: applied but changed an unrelated import and left the failure intact.
+- R002 minimal: recount applied, but it omitted the required test name, exceeded the
+  diff limit, and failed the exact test.
+- R002 old-patch: correct semantics but malformed hunk counts; recount and exact test
+  safely recovered it.
+
+### Conclusion
+
+Removing the old Candidate did not improve success. Including it improved mean score and
+produced the only recoverable Candidate, but also anchored an unrelated R001 edit, so no
+single packet is a safe default. The larger bottleneck is unreliable unified-diff
+construction plus inconsistent semantics, not context size alone. Qwen 14B is removed
+from default escalation and retained only as an unqualified research Candidate.
+
+### Next Experiment
+
+Compare strict structured edits (`path`, exact `old`, exact `new`) against unified diff
+on the same cases. Let the Harness construct the diff deterministically, reject ambiguous
+or repeated snippets, and preserve apply/path/size/exact-test gates.

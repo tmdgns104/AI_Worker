@@ -1,0 +1,11 @@
+{
+  "suite_id": "team-project-os-escalation-qualification-v2",
+  "schema_version": 2,
+  "extends": "escalation_suite_v1.json",
+  "case_overrides": {
+    "ESC-R001-MIN": {"allow_recount": true},
+    "ESC-R001-OLD": {"allow_recount": true},
+    "ESC-R002-MIN": {"allow_recount": true},
+    "ESC-R002-OLD": {"allow_recount": true}
+  }
+}

@@ -2,22 +2,22 @@
 
 ## Current Phase
 
-`V0.1 — Real E2E qualification`
+`V0.1 — Local Coder contract qualification`
 
 ## Current Task
 
-`TASK-003 — Real Target E2E Pipeline Validation` — EXPERIMENT COMPLETED;
-TARGET CHANGE PASS, LOCAL-ONLY PIPELINE ACCEPTANCE FAIL.
+`TASK-004 — Coder Feedback Contract and Escalation Qualification` — IMPLEMENTED AND
+VERIFIED; HARNESS IMPROVEMENT PASS, QWEN 14B QUALIFICATION FAIL.
 
 ## Previous Task
 
-`TASK-002 — Role-based Local Development Benchmark` — IMPLEMENTED AND VERIFIED.
+`TASK-003 — Real Target E2E Pipeline Validation` — TARGET CHANGE PASS, LOCAL-ONLY
+PIPELINE ACCEPTANCE FAIL.
 
 ## Next Task
 
-`TASK-004 — Coder feedback contract and escalation regression qualification`.
-Freeze the TASK-003 failure, improve semantic/minimal-diff gates and feedback packet
-design, then require multiple escalation cases before restoring qualification.
+`TASK-005 — Structured Edit Candidate Experiment` — PROPOSED / NOT STARTED.
+Compare exact old/new snippet output with unified diff output on the same frozen cases.
 
 ## Current Target
 
@@ -25,72 +25,70 @@ design, then require multiple escalation cases before restoring qualification.
   apart from its pre-existing untracked `team_project_os-main.zip`
 - Isolated worktree: `D:\AI_worker\worktree\team_project_os`
 - Branch: `ai/team-project-os-improvement`
-- Current worktree commit: `1ecbd8fa7d7a61e9b721dc115788ec52b1a37394`
-- Worktree status: clean; Target push/merge/release not performed
+- Worktree commit: `1ecbd8fa7d7a61e9b721dc115788ec52b1a37394`
+- TASK-004 made no Target change or Target push/merge/release
 
 ## Current Architecture
 
 `Codex Supervisor → deterministic Python Harness → bounded/stateless Ollama Workers
-→ schema/patch/test validation → Codex final review/takeover → isolated Target worktree`.
+→ schema/patch/revision/path/size/test gates → Codex review/takeover → isolated Target`.
 
-TASK-003 required Codex takeover after both Local Coder Candidates failed. Architecture
-is unchanged; the evidence narrows qualification claims rather than authorizing a rewrite.
+Whole-output fences and opt-in hunk recount may be normalized deterministically, while
+strict compliance remains separately measured. Normalization never bypasses semantic,
+allowed-file, size, or exact-test gates.
 
 ## Current Worker Routing
 
-- Scout: `qwen3:8b` → `qwen3.5:9b` — CONDITIONAL; real E2E file selection passed.
-- Planner: `qwen3:8b` → `qwen2.5-coder:14b-instruct-q3_K_S` — UNQUALIFIED without
-  independent semantic validation; both failed the TASK-003 plan.
-- Coder: `qwen2.5-coder:7b` — reject-only fast Candidate; never auto-apply.
-- Reviewer: Mistral Nemo ordinary regression / 14B security — CONDITIONAL and never
-  authoritative; TASK-003 observed a false accept and a false revise from Mistral.
-- Escalation: `qwen2.5-coder:14b-instruct-q3_K_S` — benchmark-qualified only on ESC-001;
-  real E2E qualification FAILED after it repeated the fast Candidate verbatim.
-- Codex takeover remains required after one bounded escalation failure.
+- Scout: `qwen3:8b` → `qwen3.5:9b` — CONDITIONAL.
+- Planner: `qwen3:8b` → Qwen 14B — UNQUALIFIED without semantic validation.
+- Coder: `qwen2.5-coder:7b` — optional reject-only fast Candidate; fallback is `null`.
+- Reviewer: Mistral Nemo ordinary / Qwen 14B security — CONDITIONAL, never authoritative.
+- Escalation: no qualified default model.
+- Qwen 14B escalation: `UNQUALIFIED_RESEARCH_ONLY`; use only in explicit multi-case
+  experiments with hard gates.
+- Default takeover: Codex after one rejected fast Candidate.
 
-## Latest Benchmark and E2E Evidence
+## Latest Benchmark and Evidence
 
-- Role benchmark: `BENCH-20260829-163009`, v2, 21/21 calls, 714.23 s summed latency.
-- Real E2E Evidence: `e2e_results/TASK-003/`.
-- Local calls: 8; summed latency: 412.492 s; Target pipeline time: 752.320 s;
-  total time through final verification: 994.164 s.
-- First Candidate Acceptance: false; Escalated Candidate Acceptance: false.
-- Codex material interventions: 2 / 5 functional Local stages = 40%.
-- Codex direct Target code edits: 1.
-- Final Target diff: one file, `+1/-1`.
-- Focused Target discovery: before import failure; after 14/14 PASS.
-- Full Target discovery: before 65 tests + import error; after 78/78 PASS.
-- Original Target non-pollution and worktree-clean-after-commit gates: PASS.
-- AI_Worker: 15/15 tests, compile, Doctor, 15 JSON files, and diff check PASS.
+- Run: `BENCH-20260830-102723`, suite v1, four actual Qwen 14B calls.
+- Runtime: temperature 0, seed 42, context 8192, timeout 300 s, retries 0.
+- Strict result: 0/4 hard-gate PASS, mean score 21.25, summed latency 79.472 s.
+- Minimal feedback: 0/2; feedback plus old patch: 0/2.
+- Suite v2 zero-call recount replay: 1/4 PASS; model remains unqualified.
+- Gold calibration: R001 100 and R002 95, all gates PASS.
+- Target baseline HEAD/hash/clean invariants: PASS before and after.
+- Ollama execution observation: Qwen 14B runtime 8.4 GB, 26%/74% CPU/GPU, context 8192.
 
 ## Bootstrap Status
 
 - Environment doctor: PASS
 - Ollama/model inventory: VERIFIED
 - Target worktree isolation: VERIFIED
-- Role-based benchmark: DONE
+- Role benchmark: DONE
 - First real Target improvement: PRODUCT CHANGE VERIFIED
-- Local-only end-to-end implementation: FAILED, Evidence retained
+- Local-only E2E implementation: FAILED
+- Multi-case escalation qualification: FAILED
+- Deterministic fenced diff/recount validation: IMPLEMENTED
 - Minimal Harness: IN PROGRESS
 
 ## Known Problems
 
-- `run_task` invokes Coder even when Planner semantics conflict with the traceback.
-- `revise` passed a large failed Candidate and feedback to 14B; the model repeated the
-  failed patch verbatim after 192.46 s.
-- Planner schema validity does not imply behavioral correctness.
-- Reviewer output can be schema-invalid false accept or schema-valid false revise.
-- One synthetic ESC-001 success is insufficient escalation qualification.
-- `run_task` still lacks an automatic bounded state machine and focused-test execution.
+- No installed Coder or Escalation model is qualified as a default.
+- Unified diff generation frequently produces invalid hunk counts or wrong context.
+- Old-patch context can help one regression case and anchor an unrelated edit in another.
+- Planner and Reviewer semantic reliability remains conditional.
+- `run_task` still invokes Coder after a semantically invalid plan and lacks an automatic
+  bounded apply/test state machine.
+- Ignored `state/task004-*` disposable directories remain locally after cleanup was
+  policy-blocked; they are not tracked and no process is active.
 
 ## Next Experiment
 
-Compare a minimal structured failure packet against the current full-old-patch packet on
-the fixed TASK-003 case and at least one additional real-like case. Add deterministic
-semantic relevance/minimal-diff gates, then select or reject 14B escalation based on
-apply and exact-test Evidence.
+Use strict JSON exact replacements (`path`, `old`, `new`) on R001/R002. The Harness must
+require one unique exact old-snippet match, allowed paths, no-op rejection, changed-line
+bounds, disposable apply, and exact tests before comparing with unified diff acceptance.
 
 ## Acceptance Rule
 
-Local Worker output alone never completes a Task. Completion requires deterministic
-Evidence and Codex acceptance. Product-change PASS does not imply pipeline-autonomy PASS.
+Local Worker output alone never completes a Task. A best-observed model is not a primary
+unless every required hard gate passes across the frozen qualification cases.
