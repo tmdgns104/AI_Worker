@@ -52,6 +52,27 @@ class SuiteValidationTests(unittest.TestCase):
             suite["candidates"]["coder"],
         )
 
+    def test_semantic_anchor_suite_is_frozen_and_valid(self):
+        suite = benchmark_runner.load_suite(
+            ROOT / "benchmarks" / "semantic_anchor_suite_v1.json"
+        )
+        corrected = benchmark_runner.load_suite(
+            ROOT / "benchmarks" / "semantic_anchor_suite_v2.json"
+        )
+
+        self.assertEqual("team-project-os-semantic-anchor-v1", suite["suite_id"])
+        self.assertEqual(2, len(suite["cases"]))
+        self.assertTrue(
+            all(case["context_mode"] == "semantic_anchor" for case in suite["cases"])
+        )
+        self.assertTrue(all("semantic_ground_truth" in case for case in suite["cases"]))
+        self.assertEqual("team-project-os-semantic-anchor-v2", corrected["suite_id"])
+        r002 = next(case for case in corrected["cases"] if case["case_id"] == "SA-R002")
+        self.assertEqual(
+            "first_oversized_progress_test",
+            r002["semantic_ground_truth"]["semantic_check"],
+        )
+
     def test_duplicate_case_ids_are_rejected(self):
         suite = benchmark_runner.load_suite(ROOT / "benchmarks" / "suite_v2.json")
         suite["cases"][1]["case_id"] = suite["cases"][0]["case_id"]
@@ -287,6 +308,60 @@ class DeterministicEvaluatorTests(unittest.TestCase):
         self.assertTrue(result["generated_diff_correctness"])
         self.assertTrue(result["focused_test_correctness"])
         self.assertTrue(benchmark_runner.all_hard_gates_pass(result))
+
+    def test_semantically_wrong_applicable_edit_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "target"
+            target.mkdir()
+            benchmark_runner.run_cmd(["git", "init", "--quiet"], cwd=target, check=True)
+            benchmark_runner.run_cmd(
+                ["git", "config", "user.email", "benchmark@example.invalid"],
+                cwd=target,
+                check=True,
+            )
+            benchmark_runner.run_cmd(
+                ["git", "config", "user.name", "Benchmark"], cwd=target, check=True
+            )
+            (target / "sample.py").write_text("old\n", encoding="utf-8")
+            benchmark_runner.run_cmd(["git", "add", "sample.py"], cwd=target, check=True)
+            benchmark_runner.run_cmd(
+                ["git", "commit", "--quiet", "-m", "baseline"], cwd=target, check=True
+            )
+            case = {
+                "allowed_files": ["sample.py"],
+                "required_patch_terms": ["target_symbol"],
+                "semantic_ground_truth": {
+                    "target_symbol": "target_symbol",
+                    "expected_changed_files": ["sample.py"],
+                    "target_terms": ["target_symbol"],
+                    "required_terms": ["return correct"],
+                    "forbidden_terms": ["return wrong"],
+                },
+                "test_command": ["python", "-c", "assert True"],
+                "max_added_lines": 1,
+                "max_changed_lines": 2,
+                "max_edits": 1,
+                "ensure_test_package": False,
+            }
+            raw = json.dumps(
+                {
+                    "edits": [
+                        {
+                            "path": "sample.py",
+                            "old_text": "old",
+                            "new_text": "target_symbol return wrong",
+                        }
+                    ]
+                }
+            )
+
+            result = benchmark_runner.evaluate_structured_edit(case, raw, target, 85)
+
+        self.assertTrue(result["deterministic_application_correctness"])
+        self.assertTrue(result["focused_test_correctness"])
+        self.assertFalse(result["semantic_correctness"])
+        self.assertIn("WRONG_BEHAVIOR", result["semantic_failure_reason"])
+        self.assertFalse(benchmark_runner.all_hard_gates_pass(result))
 
     def test_minimal_escalation_prompt_omits_old_patch(self):
         suite = benchmark_runner.load_suite(ROOT / "benchmarks" / "escalation_suite_v1.json")

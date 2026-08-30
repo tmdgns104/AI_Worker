@@ -1,0 +1,18 @@
+{
+  "extends": "semantic_anchor_suite_v1.json",
+  "suite_id": "team-project-os-semantic-anchor-v2",
+  "schema_version": 2,
+  "case_overrides": {
+    "SA-R002": {
+      "semantic_ground_truth": {
+        "target_symbol": "V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "expected_changed_files": ["tests/test_v016_blocker_regressions.py"],
+        "target_terms": ["test_first_oversized_message_is_selected_for_progress", "select_message_chunk"],
+        "required_terms": ["max_characters", "self.assertEqual(total, 1)", "[item.cursor for item in selected]", "[1]"],
+        "forbidden_terms": ["self.assertEqual(total, 2)", "self.assertEqual(selected, [])", "except Exception"],
+        "semantic_check": "first_oversized_progress_test",
+        "semantic_function": "test_first_oversized_message_is_selected_for_progress"
+      }
+    }
+  }
+}

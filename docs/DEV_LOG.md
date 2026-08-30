@@ -263,3 +263,60 @@ proved both semantically wrong. Operational routing remains unchanged.
 
 TASK-006 should isolate semantic/context and empty-preimage failures using Harness-provided
 unique anchors and explicit behavior assertions, without adding a model variable.
+
+---
+
+## 2026-08-30 — D-007 Semantic Anchor Builder and Qualification
+
+### Task
+
+Implement deterministic semantic anchors, compare anchored context with TASK-005 on the
+same cases and models, and decide qualification without changing Target code.
+
+### Changed
+
+- Added `semantic_anchor.py` with safe AST symbol extraction, import/test anchors,
+  bounded source, duplicate/missing/syntax rejection, and deterministic packets.
+- Added semantic ground-truth evaluation and an R002 AST data-flow check that separates
+  semantic correctness from schema, preimage, apply, generated diff, and focused test.
+- Added semantic-anchor suite v1 plus evaluator-corrected v2, Gold calibration, baseline
+  comparison, raw/result persistence, and a zero-model-call replay command.
+- Added 11 Anchor Builder/adversarial evaluator tests and benchmark integration tests.
+- Executed four Local calls, retained the v1 evaluator false pass, and replayed identical
+  raw Evidence under v2 instead of overwriting historical results.
+- Recorded ADR-011, updated routing/status/research/benchmark records, and proposed
+  TASK-007 without starting it.
+
+### Corrections Retained
+
+- One initial unit assertion expected a class-method signature without source indentation;
+  the test oracle was corrected because exact source intentionally preserves indentation.
+- Suite v1 term matching falsely accepted 7B R002. Suite v2 added the required AST
+  relationship check; replay used zero Local calls and v1 remains diagnostic Evidence.
+
+### Verification
+
+- Gold calibration: R001/R002 score 100, all hard gates PASS
+- Actual Local run: 4/4 responses, retry 0, summed latency 45.975 seconds
+- Corrected qualification replay: 0/4 hard-gate PASS; both models remain unqualified
+- Target frozen baseline HEAD/hash/clean invariant: PASS before and after
+- Final unit tests: 42/42 PASS
+- Python compile and Doctor: PASS
+- JSON/JSONL: 26 files and 8 rows parsed successfully
+- High-confidence secret scan and `git diff --check`: PASS
+- Target worktree `1ecbd8f` and frozen baseline `3c05219`: clean; original Target has
+  only its pre-existing untracked ZIP
+- Global `context-engineering` Skill received the validated reusable semantic-anchor
+  selection rule; `quick_validate.py` passed under UTF-8 mode
+
+### Result
+
+Harness and experiment PASS; model qualification FAIL. Anchors improved mechanical
+application and one 14B case, but context increased 95.7% and no model passed the frozen
+multi-case hard gate. Commit: `add semantic anchor qualification experiment` (enclosing
+logical commit).
+
+### Remaining
+
+TASK-007 should test a bounded behavior vector on R002 before adding more context or a
+new model. Structured edit and semantic-anchor routes remain non-default.

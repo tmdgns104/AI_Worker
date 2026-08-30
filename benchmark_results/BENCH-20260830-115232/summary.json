@@ -1,0 +1,139 @@
+{
+  "models": [
+    {
+      "role": "coder",
+      "model": "qwen2.5-coder:7b",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 70,
+      "mean_latency_seconds": 4.84,
+      "qualified": false
+    },
+    {
+      "role": "coder",
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "slots": 2,
+      "request_successes": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 72.5,
+      "mean_latency_seconds": 18.15,
+      "qualified": false
+    }
+  ],
+  "recommendations": {
+    "coder": {
+      "primary": null,
+      "fallback": null,
+      "best_observed": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "primary_qualified": false,
+      "reason": "hard gates 0/2, mean score 72.5, mean latency 18.15s"
+    }
+  },
+  "contract_comparison": [
+    {
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "candidate_format": "structured_edit",
+      "slots": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "semantic_passes": 1,
+      "contract_passes": 0,
+      "deterministic_application_passes": 2,
+      "generated_diff_passes": 2,
+      "focused_test_passes": 1,
+      "mean_score": 72.5,
+      "mean_latency_seconds": 18.15,
+      "qualified": false
+    },
+    {
+      "model": "qwen2.5-coder:7b",
+      "candidate_format": "structured_edit",
+      "slots": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "semantic_passes": 1,
+      "contract_passes": 0,
+      "deterministic_application_passes": 2,
+      "generated_diff_passes": 2,
+      "focused_test_passes": 0,
+      "mean_score": 70,
+      "mean_latency_seconds": 4.84,
+      "qualified": false
+    }
+  ],
+  "run_id": "BENCH-20260830-115232",
+  "suite_id": "team-project-os-semantic-anchor-v1",
+  "completed_at": "2026-08-30T02:53:43.839414+00:00",
+  "slot_count": 4,
+  "target_after": {
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "clean": true,
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1"
+    }
+  },
+  "baseline_comparison": {
+    "baseline_results": "benchmark_results/BENCH-20260830-111950/results.jsonl",
+    "anchored_run": "BENCH-20260830-115232",
+    "models": [
+      {
+        "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+        "baseline": {
+          "slots": 2,
+          "semantic_passes": 0,
+          "structured_contract_passes": 0,
+          "deterministic_apply_passes": 1,
+          "generated_diff_passes": 1,
+          "focused_test_passes": 0,
+          "hard_gate_passes": 0,
+          "mean_context_chars": 3034.5,
+          "mean_latency_seconds": 9.103
+        },
+        "semantic_anchor": {
+          "slots": 2,
+          "semantic_passes": 1,
+          "structured_contract_passes": 0,
+          "deterministic_apply_passes": 2,
+          "generated_diff_passes": 2,
+          "focused_test_passes": 1,
+          "hard_gate_passes": 0,
+          "mean_context_chars": 5938.5,
+          "mean_latency_seconds": 18.15
+        },
+        "context_delta_chars": 2904.0,
+        "context_delta_percent": 95.7
+      },
+      {
+        "model": "qwen2.5-coder:7b",
+        "baseline": {
+          "slots": 2,
+          "semantic_passes": 0,
+          "structured_contract_passes": 0,
+          "deterministic_apply_passes": 1,
+          "generated_diff_passes": 1,
+          "focused_test_passes": 0,
+          "hard_gate_passes": 0,
+          "mean_context_chars": 3034.5,
+          "mean_latency_seconds": 2.491
+        },
+        "semantic_anchor": {
+          "slots": 2,
+          "semantic_passes": 1,
+          "structured_contract_passes": 0,
+          "deterministic_apply_passes": 2,
+          "generated_diff_passes": 2,
+          "focused_test_passes": 0,
+          "hard_gate_passes": 0,
+          "mean_context_chars": 5938.5,
+          "mean_latency_seconds": 4.838
+        },
+        "context_delta_chars": 2904.0,
+        "context_delta_percent": 95.7
+      }
+    ]
+  }
+}

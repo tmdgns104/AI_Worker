@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 
 from ai_worker import ROOT, ollama_chat_detailed, run_cmd
+from semantic_anchor import build_anchor_packet, evaluate_semantic_candidate
 from structured_edit import apply_exact_edits, parse_structured_candidate
 
 
@@ -82,6 +83,13 @@ def validate_suite(suite: dict) -> None:
             if missing_case_keys:
                 raise ValueError(
                     f"structured case {case['case_id']} missing keys: {missing_case_keys}"
+                )
+        if case.get("context_mode") == "semantic_anchor":
+            required = {"semantic_anchor", "semantic_ground_truth"}
+            missing_case_keys = sorted(required - set(case))
+            if missing_case_keys:
+                raise ValueError(
+                    f"anchored case {case['case_id']} missing keys: {missing_case_keys}"
                 )
 
 
@@ -219,6 +227,7 @@ def build_prompt(case: dict, role: str, target_repo: Path, files: list[str]) -> 
             )
         sections = [f"CASE: {case['case_id']}", f"TASK:\n{case['task']}"]
         newline_note = ""
+        anchor_json = ""
         if case.get("output_contract") == "structured_edit":
             newline_styles = []
             for relative in case["allowed_files"]:
@@ -231,11 +240,27 @@ def build_prompt(case: dict, role: str, target_repo: Path, files: list[str]) -> 
                 + ". Encode multiline new_text with the matching JSON newline escapes."
             )
             sections.append(newline_note)
+        if case.get("context_mode") == "semantic_anchor":
+            packet = build_anchor_packet(case, target_repo)
+            anchor_json = json.dumps(packet, ensure_ascii=False, indent=2)
+            sections.append(
+                "SEMANTIC ANCHOR PACKET:\n"
+                "Use the edit_target preimage exactly as old_text. Anchors identify location "
+                "and behavior contracts; they do not supply the implementation.\n"
+                + anchor_json
+            )
         if case.get("feedback"):
             sections.append(f"SUPERVISOR REQUIREMENTS:\n{case['feedback']}")
         sections.append(f"BOUNDED CONTEXT:\n{context}")
         user = "\n\n".join(sections)
-        return system, user, len(context) + len(case.get("feedback", "")) + len(newline_note)
+        return (
+            system,
+            user,
+            len(context)
+            + len(case.get("feedback", ""))
+            + len(newline_note)
+            + len(anchor_json),
+        )
     if role == "reviewer":
         taxonomy = "\n".join(f"- {key}: {value}" for key, value in ISSUE_TAXONOMY.items())
         patch = (ROOT / case["candidate_patch"]).read_text(encoding="utf-8")
@@ -644,14 +669,20 @@ def evaluate_structured_edit(case: dict, raw: str, target_repo: Path, minimum: i
         and application["unique_occurrences"]
     )
     generated_diff_ok = generated_diff_check and generated_apply_check and postimage_match
-    semantic_ok = terms_ok and test_ok
+    semantic = None
+    if case.get("semantic_ground_truth"):
+        semantic = evaluate_semantic_candidate(case["semantic_ground_truth"], payload)
+        semantic_ok = semantic["semantic_correct"]
+    else:
+        semantic_ok = terms_ok and test_ok
+    semantic_score_ok = semantic_ok if semantic is not None else terms_ok
     score = round(
         15 * structured_contract_ok
         + 10 * application["path_validation"]
         + 15 * application["preconditions_valid"]
         + 15 * deterministic_application_ok
         + 10 * allowed_only
-        + 10 * terms_ok
+        + 10 * semantic_score_ok
         + 10 * generated_diff_ok
         + 10 * test_ok
         + 5 * size["within_limit"],
@@ -664,7 +695,7 @@ def evaluate_structured_edit(case: dict, raw: str, target_repo: Path, minimum: i
         "unique_occurrence": application["unique_occurrences"],
         "atomic_application": deterministic_application_ok,
         "allowed_files_only": allowed_only,
-        "semantic_requirements": terms_ok,
+        "semantic_requirements": semantic_ok,
         "generated_diff": generated_diff_ok,
         "focused_test": test_ok,
         "diff_size": size["within_limit"],
@@ -689,6 +720,9 @@ def evaluate_structured_edit(case: dict, raw: str, target_repo: Path, minimum: i
         "test_output": test_output,
         "apply_output": gate_output[-2000:],
         "semantic_correctness": semantic_ok,
+        "semantic_evidence": semantic,
+        "semantic_failure_reason": semantic["semantic_failure_reason"] if semantic else [],
+        "target_symbol": case.get("semantic_ground_truth", {}).get("target_symbol"),
         "structured_contract_correctness": structured_contract_ok,
         "deterministic_application_correctness": deterministic_application_ok,
         "generated_diff_correctness": generated_diff_ok,
@@ -892,6 +926,91 @@ def calibrate_structured_cases(suite: dict, target_repo: Path, output_dir: Path)
     return results
 
 
+def write_anchor_packets(suite: dict, target_repo: Path, output_dir: Path) -> None:
+    anchored = [case for case in suite["cases"] if case.get("context_mode") == "semantic_anchor"]
+    if not anchored:
+        return
+    anchor_dir = output_dir / "anchors"
+    anchor_dir.mkdir()
+    for case in anchored:
+        packet = build_anchor_packet(case, target_repo)
+        (anchor_dir / f"{case['case_id']}.json").write_text(
+            json.dumps(packet, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+
+
+def compare_with_baseline(suite: dict, results: list[dict], output_dir: Path) -> dict | None:
+    baseline_path = suite.get("baseline_results")
+    if not baseline_path:
+        return None
+    baseline = [
+        json.loads(line)
+        for line in (ROOT / baseline_path).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+    def metrics(slots: list[dict]) -> dict:
+        return {
+            "slots": len(slots),
+            "semantic_passes": sum(bool(slot.get("semantic_correctness")) for slot in slots),
+            "structured_contract_passes": sum(
+                bool(slot.get("structured_contract_correctness")) for slot in slots
+            ),
+            "deterministic_apply_passes": sum(
+                bool(slot.get("deterministic_application_correctness")) for slot in slots
+            ),
+            "generated_diff_passes": sum(
+                bool(slot.get("generated_diff_correctness")) for slot in slots
+            ),
+            "focused_test_passes": sum(
+                bool(slot.get("focused_test_correctness")) for slot in slots
+            ),
+            "hard_gate_passes": sum(all_hard_gates_pass(slot) for slot in slots),
+            "mean_context_chars": round(
+                statistics.mean(slot.get("input_context_chars", 0) for slot in slots), 2
+            ),
+            "mean_latency_seconds": round(
+                statistics.mean(slot.get("latency_seconds", 0) for slot in slots), 3
+            ),
+        }
+
+    models = sorted({result["model"] for result in results})
+    comparisons = []
+    for model in models:
+        before_slots = [
+            slot
+            for slot in baseline
+            if slot.get("model") == model and slot.get("candidate_format") == "structured_edit"
+        ]
+        after_slots = [slot for slot in results if slot.get("model") == model]
+        before = metrics(before_slots)
+        after = metrics(after_slots)
+        context_delta = after["mean_context_chars"] - before["mean_context_chars"]
+        context_percent = (
+            round(100 * context_delta / before["mean_context_chars"], 2)
+            if before["mean_context_chars"]
+            else None
+        )
+        comparisons.append(
+            {
+                "model": model,
+                "baseline": before,
+                "semantic_anchor": after,
+                "context_delta_chars": round(context_delta, 2),
+                "context_delta_percent": context_percent,
+            }
+        )
+    comparison = {
+        "baseline_results": baseline_path,
+        "anchored_run": output_dir.name,
+        "models": comparisons,
+    }
+    (output_dir / "baseline_comparison.json").write_text(
+        json.dumps(comparison, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    return comparison
+
+
 def safe_name(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", value)
 
@@ -949,6 +1068,7 @@ def run_benchmark(
     (output_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    write_anchor_packets(suite, target_repo, output_dir)
     calibrate_structured_cases(suite, target_repo, output_dir)
 
     results = []
@@ -987,6 +1107,8 @@ def run_benchmark(
                     "feedback_variant": case.get("feedback_variant"),
                     "include_old_patch": case.get("include_old_patch"),
                     "candidate_format": case.get("output_contract", "direct_diff"),
+                    "context_mode": case.get("context_mode", "bounded"),
+                    "anchor_type": case.get("semantic_anchor", {}).get("anchor_type"),
                 }
                 try:
                     request_started = time.perf_counter()
@@ -1049,6 +1171,7 @@ def run_benchmark(
 
     target_after = validate_target(suite, target_repo)
     summary = summarize_results(suite, results)
+    baseline_comparison = compare_with_baseline(suite, results, output_dir)
     summary.update(
         {
             "run_id": run_id,
@@ -1056,6 +1179,100 @@ def run_benchmark(
             "completed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
             "slot_count": len(results),
             "target_after": target_after,
+            "baseline_comparison": baseline_comparison,
+        }
+    )
+    (output_dir / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(f"saved: {output_dir}", flush=True)
+    return output_dir
+
+
+def replay_benchmark(
+    *,
+    suite_path: Path,
+    target_repo: Path,
+    source_run: Path,
+) -> Path:
+    """Re-evaluate preserved raw outputs without making another model call."""
+    suite = load_suite(suite_path)
+    target_before = validate_target(suite, target_repo)
+    source_results = [
+        json.loads(line)
+        for line in (source_run / "results.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    by_slot = {(item["case_id"], item["model"]): item for item in source_results}
+    run_id = "REPLAY-" + dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    output_dir = ROOT / "benchmark_results" / run_id
+    raw_dir = output_dir / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=False)
+    (output_dir / "suite.json").write_text(
+        json.dumps(suite, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    source_manifest = json.loads((source_run / "manifest.json").read_text(encoding="utf-8"))
+    manifest = {
+        "run_id": run_id,
+        "suite_id": suite["suite_id"],
+        "started_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "source_run": source_run.name,
+        "model_calls": 0,
+        "raw_reused": True,
+        "target_before": target_before,
+        "runtime": suite["runtime"],
+        "models": source_manifest["models"],
+    }
+    (output_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    write_anchor_packets(suite, target_repo, output_dir)
+    calibrate_structured_cases(suite, target_repo, output_dir)
+
+    files = repository_files(target_repo)
+    results = []
+    for case in suite["cases"]:
+        for model in suite["candidates"][case["role"]]:
+            previous = by_slot[(case["case_id"], model)]
+            raw_name = f"{case['case_id']}--{safe_name(model)}.txt"
+            raw = (source_run / "raw" / raw_name).read_text(encoding="utf-8")
+            started = time.perf_counter()
+            evaluated = evaluate(
+                case,
+                raw.strip(),
+                target_repo,
+                files,
+                suite["minimum_scores"][case["role"]],
+            )
+            result = {
+                **previous,
+                "run_id": run_id,
+                "suite_id": suite["suite_id"],
+                "replay_source_run": source_run.name,
+                "replay_model_call": False,
+                "replay_evaluation_seconds": round(time.perf_counter() - started, 3),
+                **evaluated,
+            }
+            results.append(result)
+            (raw_dir / raw_name).write_text(raw, encoding="utf-8")
+    results_path = output_dir / "results.jsonl"
+    with results_path.open("w", encoding="utf-8") as handle:
+        for result in results:
+            handle.write(json.dumps(result, ensure_ascii=False) + "\n")
+
+    target_after = validate_target(suite, target_repo)
+    summary = summarize_results(suite, results)
+    baseline_comparison = compare_with_baseline(suite, results, output_dir)
+    summary.update(
+        {
+            "run_id": run_id,
+            "suite_id": suite["suite_id"],
+            "completed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            "slot_count": len(results),
+            "model_calls": 0,
+            "source_run": source_run.name,
+            "target_after": target_after,
+            "baseline_comparison": baseline_comparison,
         }
     )
     (output_dir / "summary.json").write_text(

@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "anchor_type": "ast_symbol_test_behavior_contract",
+  "behavior_contract": {
+    "current_behavior": "select_message_chunk already selects the first eligible oversized message when selected is empty, but no focused regression protects that progress invariant",
+    "expected_behavior": "a new test proves one oversized first eligible message is selected and total remains exactly 1 when max_characters is smaller than that message",
+    "target_symbol": "app.conversation_import.select_message_chunk",
+    "related_test": "V016BlockerUnitTests.test_message_chunk_is_contiguous_and_bounded",
+    "invariants": [
+      "test-only change",
+      "do not change select_message_chunk",
+      "assert selected cursor 1",
+      "assert total 1"
+    ],
+    "allowed_change": "insert one test method immediately before the edit-target method signature",
+    "forbidden_change": [
+      "empty old_text",
+      "production edit",
+      "total 2",
+      "empty selected result",
+      "broad exception handling"
+    ],
+    "verification": "run only V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress"
+  },
+  "anchors": [
+    {
+      "anchor_id": "PRODUCTION-001",
+      "role": "target",
+      "path": "app/conversation_import.py",
+      "symbol": "select_message_chunk",
+      "kind": "function",
+      "containing": null,
+      "signature": "def select_message_chunk(\r\n    messages: list[ConversationMessage],\r\n    *,\r\n    after_cursor: int,\r\n    to_cursor: int | None = None,\r\n    max_messages: int = MAX_CHUNK_MESSAGES,\r\n    max_characters: int = MAX_CHUNK_CHARACTERS,\r\n) -> tuple[list[ConversationMessage], int]:",
+      "source": "def select_message_chunk(\r\n    messages: list[ConversationMessage],\r\n    *,\r\n    after_cursor: int,\r\n    to_cursor: int | None = None,\r\n    max_messages: int = MAX_CHUNK_MESSAGES,\r\n    max_characters: int = MAX_CHUNK_CHARACTERS,\r\n) -> tuple[list[ConversationMessage], int]:\r\n    \"\"\"Return the next contiguous bounded range and the total remaining count.\"\"\"\r\n\r\n    eligible = [\r\n        message\r\n        for message in messages\r\n        if message.cursor > after_cursor\r\n        and (to_cursor is None or message.cursor <= to_cursor)\r\n    ]\r\n    selected: list[ConversationMessage] = []\r\n    characters = 0\r\n    for message in eligible:\r\n        safe_length = len(redact_secrets(message.content)[:40_000])\r\n        if selected and (\r\n            len(selected) >= max_messages or characters + safe_length > max_characters\r\n        ):\r\n            break\r\n        selected.append(message)\r\n        characters += safe_length\r\n    return selected, len(eligible)",
+      "preimage": null,
+      "direct_callees": [
+        "append",
+        "len",
+        "redact_secrets"
+      ],
+      "source_chars": 955
+    },
+    {
+      "anchor_id": "TEST-RELATED-001",
+      "role": "related_test",
+      "path": "tests/test_v016_blocker_regressions.py",
+      "symbol": "V016BlockerUnitTests.test_message_chunk_is_contiguous_and_bounded",
+      "kind": "method",
+      "containing": "V016BlockerUnitTests",
+      "signature": "    def test_message_chunk_is_contiguous_and_bounded(self):",
+      "source": "    def test_message_chunk_is_contiguous_and_bounded(self):\r\n        messages = [\r\n            ConversationMessage(cursor, \"user\", \"x\" * 10, \"\")\r\n            for cursor in range(1, 7)\r\n        ]\r\n\r\n        selected, total = select_message_chunk(\r\n            messages,\r\n            after_cursor=1,\r\n            max_messages=3,\r\n            max_characters=1_000,\r\n        )\r\n        self.assertEqual([item.cursor for item in selected], [2, 3, 4])\r\n        self.assertEqual(total, 5)\r\n\r\n        character_limited, total = select_message_chunk(\r\n            messages,\r\n            after_cursor=1,\r\n            max_messages=10,\r\n            max_characters=20,\r\n        )\r\n        self.assertEqual([item.cursor for item in character_limited], [2, 3])\r\n        self.assertEqual(total, 5)",
+      "preimage": null,
+      "direct_callees": [
+        "ConversationMessage",
+        "assertEqual",
+        "range",
+        "select_message_chunk"
+      ],
+      "source_chars": 781
+    },
+    {
+      "anchor_id": "EDIT-INSERT-001",
+      "role": "edit_target",
+      "path": "tests/test_v016_blocker_regressions.py",
+      "symbol": "V016BlockerUnitTests.test_distiller_uses_disposable_tool_disabled_environment_and_schema",
+      "kind": "method",
+      "containing": "V016BlockerUnitTests",
+      "signature": "    def test_distiller_uses_disposable_tool_disabled_environment_and_schema(self):",
+      "source": "    def test_distiller_uses_disposable_tool_disabled_environment_and_schema(self):",
+      "preimage": "    def test_distiller_uses_disposable_tool_disabled_environment_and_schema(self):",
+      "direct_callees": [
+        "Path",
+        "ProviderResult",
+        "TemporaryDirectory",
+        "assertEqual",
+        "assertFalse",
+        "assertIn",
+        "assertNotIn",
+        "assertTrue",
+        "build_invocation",
+        "dict",
+        "distill_conversation",
+        "dumps",
+        "enumerate",
+        "exists",
+        "is_dir",
+        "is_file",
+        "issubset",
+        "loads",
+        "patch",
+        "read_text",
+        "resolve",
+        "str",
+        "update",
+        "write_text"
+      ],
+      "source_chars": 82
+    }
+  ]
+}

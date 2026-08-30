@@ -1,0 +1,60 @@
+{
+  "baseline_results": "benchmark_results/BENCH-20260830-111950/results.jsonl",
+  "anchored_run": "BENCH-20260830-115232",
+  "models": [
+    {
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "baseline": {
+        "slots": 2,
+        "semantic_passes": 0,
+        "structured_contract_passes": 0,
+        "deterministic_apply_passes": 1,
+        "generated_diff_passes": 1,
+        "focused_test_passes": 0,
+        "hard_gate_passes": 0,
+        "mean_context_chars": 3034.5,
+        "mean_latency_seconds": 9.103
+      },
+      "semantic_anchor": {
+        "slots": 2,
+        "semantic_passes": 1,
+        "structured_contract_passes": 0,
+        "deterministic_apply_passes": 2,
+        "generated_diff_passes": 2,
+        "focused_test_passes": 1,
+        "hard_gate_passes": 0,
+        "mean_context_chars": 5938.5,
+        "mean_latency_seconds": 18.15
+      },
+      "context_delta_chars": 2904.0,
+      "context_delta_percent": 95.7
+    },
+    {
+      "model": "qwen2.5-coder:7b",
+      "baseline": {
+        "slots": 2,
+        "semantic_passes": 0,
+        "structured_contract_passes": 0,
+        "deterministic_apply_passes": 1,
+        "generated_diff_passes": 1,
+        "focused_test_passes": 0,
+        "hard_gate_passes": 0,
+        "mean_context_chars": 3034.5,
+        "mean_latency_seconds": 2.491
+      },
+      "semantic_anchor": {
+        "slots": 2,
+        "semantic_passes": 1,
+        "structured_contract_passes": 0,
+        "deterministic_apply_passes": 2,
+        "generated_diff_passes": 2,
+        "focused_test_passes": 0,
+        "hard_gate_passes": 0,
+        "mean_context_chars": 5938.5,
+        "mean_latency_seconds": 4.838
+      },
+      "context_delta_chars": 2904.0,
+      "context_delta_percent": 95.7
+    }
+  ]
+}

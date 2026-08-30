@@ -325,6 +325,16 @@ def benchmark(models=None, *, roles=None, suite_path=None, target_repo=None):
     )
 
 
+def benchmark_replay(*, suite_path, target_repo, source_run):
+    from benchmark_runner import replay_benchmark
+
+    return replay_benchmark(
+        suite_path=Path(suite_path),
+        target_repo=Path(target_repo),
+        source_run=Path(source_run),
+    )
+
+
 def run_task(task: str):
     snap = git_snapshot()
     files = list_repo_files()
@@ -488,6 +498,11 @@ def main():
     p_bench.add_argument("--suite")
     p_bench.add_argument("--target-repo")
 
+    p_replay = sub.add_parser("benchmark-replay")
+    p_replay.add_argument("--suite", required=True)
+    p_replay.add_argument("--target-repo", required=True)
+    p_replay.add_argument("--source-run", required=True)
+
     p_run = sub.add_parser("run")
     p_run.add_argument("task")
 
@@ -507,6 +522,12 @@ def main():
             roles=ns.roles or None,
             suite_path=ns.suite,
             target_repo=ns.target_repo,
+        )
+    elif ns.cmd == "benchmark-replay":
+        benchmark_replay(
+            suite_path=ns.suite,
+            target_repo=ns.target_repo,
+            source_run=ns.source_run,
         )
     elif ns.cmd == "run":
         run_task(ns.task)

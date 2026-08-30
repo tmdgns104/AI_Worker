@@ -349,3 +349,65 @@ qualified, structured output remains experimental, and Qwen 14B remains research
 Keep models and hard gates fixed. Supply explicit behavior assertions plus a deterministic
 list of small unique anchor choices, then test whether removing free-form preimage
 selection improves semantic and contract success without fuzzy matching.
+
+---
+
+## 2026-08-30 — R-008 Semantic Anchor Experiment
+
+### Hypothesis
+
+If the Harness identifies the target with path, AST symbol/signature, exact source, a
+related test symbol, and an explicit behavior contract, the installed Coder models should
+make fewer semantic mistakes than with TASK-005 bounded context alone.
+
+### Conditions
+
+- Frozen cases: R001 discovery import and R002 first-message progress regression
+- Baseline: TASK-005 structured slots from `BENCH-20260830-111950`; not rerun
+- Actual run: `BENCH-20260830-115232`; evaluator replay:
+  `REPLAY-20260830-115613`
+- Models: Qwen Coder 7B Q4_K_M and Qwen Coder 14B Q3_K_S
+- Runtime: temperature 0, seed 42, context 8192, timeout 300 seconds, repetition 1,
+  retry 0, fallback none, sequential loopback Ollama
+- Independent variable: deterministic AST/import/test anchors and explicit behavior
+  contract; exact structured-edit transport and all TASK-005 gates remained fixed
+- Four Local calls completed in 45.975 seconds summed latency
+
+The Harness calibrated both Gold Candidates at 100 before Local inference. Target HEAD,
+hashes, and clean state matched before and after the actual run and replay.
+
+### Result
+
+| Model | Context | Semantic | Apply/diff | Focused test | Hard PASS |
+|---|---|---:|---:|---:|---:|
+| 7B | TASK-005 bounded | 0/2 | 1/2 | 0/2 | 0/2 |
+| 7B | semantic anchor | 0/2 | 2/2 | 0/2 | 0/2 |
+| 14B | TASK-005 bounded | 0/2 | 1/2 | 0/2 | 0/2 |
+| 14B | semantic anchor | 1/2 | 2/2 | 1/2 | 0/2 |
+
+Every anchored output used Markdown fences, so strict structured compliance remained
+0/4. Mean context grew from 3,034.5 to 5,938.5 characters (+95.7%). Mean anchored
+latency was 4.838 seconds for 7B and 18.150 seconds for 14B.
+
+### Evaluator Finding
+
+Suite v1 incorrectly marked 7B R002 semantically correct because required-term matching
+did not notice that `after_cursor=1` excluded the only cursor-1 message. The focused test
+still failed. The v1 run was retained as diagnostic Evidence. Suite v2 added a
+deterministic AST data-flow check and replayed the identical raw with zero model calls;
+the corrected failure is `MISUNDERSTOOD_DATA_FLOW`.
+
+### Conclusion
+
+Semantic anchors are useful but insufficient. They improved deterministic application
+from 1/2 to 2/2 for each model and produced one real 14B semantic/test success. They also
+nearly doubled context, did not fix R002 data-flow reasoning, did not fix strict output,
+and yielded 0/4 hard-gate passes. The 7B model remains `UNQUALIFIED`; 14B remains
+`UNQUALIFIED_RESEARCH_ONLY`; anchored coding remains research-only.
+
+### Next Experiment
+
+Keep R002, models, anchors, and gates fixed. Add a bounded Harness-produced behavior
+vector describing eligible cursors, cursor boundary, content length, limit, expected
+selection, and total—without providing replacement code. This isolates task
+decomposition from model or output-contract changes.

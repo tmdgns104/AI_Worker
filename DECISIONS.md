@@ -160,3 +160,30 @@ other two used an empty preimage. Operational routing therefore remains unchange
 Deterministic assembly can safely separate a useful edit idea from patch syntax, but it
 must not convert an invalid contract or incorrect behavior into a PASS. Keeping the path
 experimental preserves this diagnostic value without weakening ADR-006 or ADR-009.
+
+---
+
+## ADR-011 - Semantic anchors are research context, not a qualified route
+
+**Status:** ACCEPTED
+
+The Harness may identify an edit target with a safe path, AST symbol/signature, exact
+source/preimage, bounded imports, a related test symbol, and explicit behavioral
+invariants. Line numbers are never the primary identity. Anchor packets remain an
+experimental context contract until a model passes all frozen semantic, strict-schema,
+application, generated-diff, size, and focused-test gates across representative cases.
+
+When an evaluator defect is found after inference, preserve the original run as
+diagnostic Evidence, version the evaluator/suite, and replay the immutable raw output
+without new model calls. Never silently relabel the old result.
+
+TASK-006 improved anchored deterministic apply/diff to 2/2 per model and produced one
+14B semantic/test success, but strict output and final hard-gate success were 0/4. Mean
+context increased 95.7%. Routing therefore remains unchanged: 7B is reject-only, there
+is no qualified Local escalation, and 14B/semantic anchors are research-only.
+
+### Reason
+
+Deterministic structural identity can remove target/preimage ambiguity, but it cannot
+substitute for behavior/data-flow understanding or strict contract compliance. The
+versioned replay rule prevents evaluator fixes from rewriting historical Evidence.

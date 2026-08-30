@@ -236,3 +236,39 @@ Reviewer:       unchanged conditional split; never authoritative
 ```
 
 The next comparison changes context/anchor selection while holding models and gates fixed.
+
+## BENCH-20260830-115232 / REPLAY-20260830-115613 — Semantic Anchor
+
+Frozen runtime: clean disposable Target at `3c05219`, Qwen Coder 7B Q4_K_M and 14B
+Q3_K_S, temperature 0, seed 42, context 8192, timeout 300 seconds, repetition 1,
+retry 0, sequential loopback Ollama. Four Local calls completed with 45.975 seconds
+summed latency. Both Gold Candidates passed every gate at 100 before inference.
+
+Suite v1 exposed an evaluator false pass on 7B R002: term matching accepted an edit where
+`after_cursor=1` excluded the only message, while the exact test failed. Suite v2 added a
+deterministic AST data-flow check and replayed the same raw with zero model calls. The v1
+artifacts remain diagnostic; the v2 replay is the routing authority.
+
+| Model | Context | Semantic | Strict JSON | Apply/diff | Focused test | Hard PASS | Mean latency |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Qwen Coder 7B | TASK-005 bounded | 0/2 | 0/2 | 1/2 | 0/2 | 0/2 | 2.491 s |
+| Qwen Coder 7B | semantic anchor | 0/2 | 0/2 | 2/2 | 0/2 | 0/2 | 4.838 s |
+| Qwen Coder 14B | TASK-005 bounded | 0/2 | 0/2 | 1/2 | 0/2 | 0/2 | 9.103 s |
+| Qwen Coder 14B | semantic anchor | 1/2 | 0/2 | 2/2 | 1/2 | 0/2 | 18.150 s |
+
+Mean context increased from 3,034.5 to 5,938.5 characters (+95.7%). Anchors improved
+mechanical correctness and one 14B semantic/test case but did not qualify either model.
+
+### Routing after TASK-006
+
+```text
+Coder:           qwen2.5-coder:7b optional reject-only Candidate -> hard gates -> Codex
+Escalation:      no qualified default
+Qwen 14B:        UNQUALIFIED_RESEARCH_ONLY
+Semantic Anchor: PARTIAL_RESEARCH_EVIDENCE_NOT_DEFAULT
+Structured edit: EXPERIMENTAL_NOT_DEFAULT
+Reviewer:        unchanged conditional split; never authoritative
+```
+
+No model was downloaded and no Target code changed. TASK-007 will isolate R002 behavior
+decomposition while retaining models, anchors, exact-edit transport, and hard gates.

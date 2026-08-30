@@ -1,0 +1,235 @@
+{
+  "suite_id": "team-project-os-semantic-anchor-v1",
+  "schema_version": 1,
+  "baseline_results": "benchmark_results/BENCH-20260830-111950/results.jsonl",
+  "source": {
+    "repository": "team_project_os",
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "reviewed_at": "2026-08-30",
+    "provenance": "TASK-005 frozen structured R001/R002 cases and user-owned Target",
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1"
+    }
+  },
+  "runtime": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 8192,
+    "timeout_seconds": 300,
+    "repetitions": 1,
+    "retries": 0,
+    "execution": "sequential",
+    "fallback": "none"
+  },
+  "minimum_scores": {
+    "coder": 85
+  },
+  "candidates": {
+    "coder": [
+      "qwen2.5-coder:7b",
+      "qwen2.5-coder:14b-instruct-q3_K_S"
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "SA-R001",
+      "role": "coder",
+      "output_contract": "structured_edit",
+      "context_mode": "semantic_anchor",
+      "gold_candidate": "benchmarks/fixtures/structured_r001_gold.json",
+      "max_edits": 1,
+      "task": "Fix the unittest discovery import failure in tests/test_v016_blocker_regressions.py. Preserve every imported symbol and all test behavior. Change only that file.",
+      "feedback": "Fix only the failing sibling-test import. Preserve CodexFixture, SESSION_ID, every other import, constants, and tests.",
+      "context": [
+        {
+          "path": "tests/test_v016_blocker_regressions.py",
+          "start_line": 15,
+          "end_line": 25
+        }
+      ],
+      "semantic_anchor": {
+        "anchor_type": "ast_import_behavior_contract",
+        "behavior_contract": {
+          "current_behavior": "unittest discovery with -s tests loads the blocker module as a top-level test module, but its package-qualified sibling import raises ModuleNotFoundError",
+          "expected_behavior": "the sibling module must resolve from the tests discovery root without a package or relative prefix",
+          "target_symbol": "the ImportFrom node that imports CodexFixture and SESSION_ID",
+          "invariants": [
+            "preserve both imported names",
+            "preserve all test behavior"
+          ],
+          "allowed_change": "replace only the anchored import statement",
+          "forbidden_change": [
+            "relative import",
+            "fixture copying",
+            "production change",
+            "package-layout change"
+          ],
+          "verification": "python -m unittest discover -s tests -p test_v016_blocker_regressions.py -v"
+        },
+        "specs": [
+          {
+            "type": "import",
+            "path": "tests/test_v016_blocker_regressions.py",
+            "module": "tests.test_conversation_import_v016",
+            "names": [
+              "CodexFixture",
+              "SESSION_ID"
+            ],
+            "anchor_id": "EDIT-IMPORT-001",
+            "role": "edit_target"
+          }
+        ]
+      },
+      "semantic_ground_truth": {
+        "target_symbol": "tests/test_v016_blocker_regressions.py import of CodexFixture and SESSION_ID",
+        "expected_changed_files": [
+          "tests/test_v016_blocker_regressions.py"
+        ],
+        "target_terms": [
+          "from test_conversation_import_v016"
+        ],
+        "required_terms": [
+          "from test_conversation_import_v016 import CodexFixture, SESSION_ID"
+        ],
+        "forbidden_terms": [
+          "from .test_conversation_import_v016",
+          "from tests.test_conversation_import_v016"
+        ]
+      },
+      "allowed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "required_patch_terms": [
+        "from test_conversation_import_v016 import CodexFixture, SESSION_ID"
+      ],
+      "test_command": [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_v016_blocker_regressions.py",
+        "-v"
+      ],
+      "ensure_test_package": false,
+      "max_added_lines": 1,
+      "max_changed_lines": 2
+    },
+    {
+      "case_id": "SA-R002",
+      "role": "coder",
+      "output_contract": "structured_edit",
+      "context_mode": "semantic_anchor",
+      "gold_candidate": "benchmarks/fixtures/structured_r002_gold.json",
+      "max_edits": 1,
+      "task": "Add the missing test-only regression for first-message progress in tests/test_v016_blocker_regressions.py. Change no production file.",
+      "feedback": "Add one focused method to V016BlockerUnitTests. The first eligible message must be larger than max_characters, selected anyway for progress, and the total eligible count must be exactly one.",
+      "context": [
+        {
+          "path": "tests/test_v016_blocker_regressions.py",
+          "start_line": 45,
+          "end_line": 100
+        },
+        {
+          "path": "app/conversation_import.py",
+          "start_line": 97,
+          "end_line": 128
+        }
+      ],
+      "semantic_anchor": {
+        "anchor_type": "ast_symbol_test_behavior_contract",
+        "behavior_contract": {
+          "current_behavior": "select_message_chunk already selects the first eligible oversized message when selected is empty, but no focused regression protects that progress invariant",
+          "expected_behavior": "a new test proves one oversized first eligible message is selected and total remains exactly 1 when max_characters is smaller than that message",
+          "target_symbol": "app.conversation_import.select_message_chunk",
+          "related_test": "V016BlockerUnitTests.test_message_chunk_is_contiguous_and_bounded",
+          "invariants": [
+            "test-only change",
+            "do not change select_message_chunk",
+            "assert selected cursor 1",
+            "assert total 1"
+          ],
+          "allowed_change": "insert one test method immediately before the edit-target method signature",
+          "forbidden_change": [
+            "empty old_text",
+            "production edit",
+            "total 2",
+            "empty selected result",
+            "broad exception handling"
+          ],
+          "verification": "run only V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress"
+        },
+        "specs": [
+          {
+            "type": "symbol",
+            "path": "app/conversation_import.py",
+            "symbol": "select_message_chunk",
+            "anchor_id": "PRODUCTION-001",
+            "role": "target",
+            "max_source_chars": 3000
+          },
+          {
+            "type": "symbol",
+            "path": "tests/test_v016_blocker_regressions.py",
+            "symbol": "V016BlockerUnitTests.test_message_chunk_is_contiguous_and_bounded",
+            "anchor_id": "TEST-RELATED-001",
+            "role": "related_test",
+            "max_source_chars": 3000
+          },
+          {
+            "type": "symbol",
+            "path": "tests/test_v016_blocker_regressions.py",
+            "symbol": "V016BlockerUnitTests.test_distiller_uses_disposable_tool_disabled_environment_and_schema",
+            "anchor_id": "EDIT-INSERT-001",
+            "role": "edit_target",
+            "max_source_chars": 500,
+            "source_mode": "signature"
+          }
+        ]
+      },
+      "semantic_ground_truth": {
+        "target_symbol": "V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "expected_changed_files": [
+          "tests/test_v016_blocker_regressions.py"
+        ],
+        "target_terms": [
+          "test_first_oversized_message_is_selected_for_progress",
+          "select_message_chunk"
+        ],
+        "required_terms": [
+          "max_characters",
+          "self.assertEqual(total, 1)",
+          "[item.cursor for item in selected]",
+          "[1]"
+        ],
+        "forbidden_terms": [
+          "self.assertEqual(total, 2)",
+          "self.assertEqual(selected, [])",
+          "except Exception"
+        ]
+      },
+      "allowed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "required_patch_terms": [
+        "test_first_oversized_message_is_selected_for_progress",
+        "select_message_chunk",
+        "max_characters",
+        "self.assertEqual(total, 1)"
+      ],
+      "test_command": [
+        "python",
+        "-m",
+        "unittest",
+        "tests.test_v016_blocker_regressions.V016BlockerUnitTests.test_first_oversized_message_is_selected_for_progress",
+        "-v"
+      ],
+      "ensure_test_package": true,
+      "max_added_lines": 18,
+      "max_changed_lines": 20
+    }
+  ]
+}

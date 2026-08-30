@@ -6,18 +6,19 @@
 
 ## Current Task
 
-`TASK-005 — Structured Edit Candidate Experiment` — IMPLEMENTED AND VERIFIED;
-HARNESS EXPERIMENT PASS, STRUCTURED CONTRACT AND MODEL QUALIFICATION FAIL.
+`TASK-006 — Semantic Anchor Experiment` — IMPLEMENTED AND VERIFIED; HARNESS
+EXPERIMENT PASS, ANCHOR PARTIAL IMPROVEMENT, MODEL QUALIFICATION FAIL.
 
 ## Previous Task
 
-`TASK-004 — Coder Feedback Contract and Escalation Qualification` — HARNESS
-IMPROVEMENT PASS, QWEN 14B QUALIFICATION FAIL.
+`TASK-005 — Structured Edit Candidate Experiment` — HARNESS EXPERIMENT PASS,
+STRUCTURED CONTRACT AND MODEL QUALIFICATION FAIL.
 
 ## Next Task
 
-`TASK-006 — Behavior Assertion and Harness-Provided Anchor Experiment` — PROPOSED /
-NOT STARTED. Reuse TASK-005 cases and models while isolating semantic/context failure.
+`TASK-007 — Behavior-Vector Task Decomposition Experiment` — PROPOSED / NOT STARTED.
+Reuse R002, models, anchors, transport, and hard gates while isolating data-flow
+decomposition from model and output-contract changes.
 
 ## Current Target
 
@@ -26,7 +27,7 @@ NOT STARTED. Reuse TASK-005 cases and models while isolating semantic/context fa
 - Isolated worktree: `D:\AI_worker\worktree\team_project_os`
 - Branch: `ai/team-project-os-improvement`
 - Worktree commit: `1ecbd8fa7d7a61e9b721dc115788ec52b1a37394`
-- TASK-005 made no Target change or Target push/merge/release
+- TASK-006 made no Target change or Target push/merge/release
 
 ## Current Architecture
 
@@ -37,10 +38,11 @@ Whole-output fences and opt-in hunk recount may be normalized deterministically,
 strict compliance remains separately measured. Normalization never bypasses semantic,
 allowed-file, size, or exact-test gates.
 
-Structured exact edits are implemented as an experimental Candidate contract. The
-Harness validates safe allowed paths, exact unique preimages, stale state, and all
+Structured exact edits and Semantic Anchors are experimental contracts. The Harness
+validates safe paths, AST symbol identity, exact unique preimages, stale state, and all
 preconditions before atomic logical application in a disposable clone. It constructs and
-reapplies the diff deterministically, but the route is not operationally qualified.
+reapplies the diff deterministically. A versioned evaluator replay may reinterpret
+immutable raw output after an evaluator defect, but never overwrites the original run.
 
 ## Current Worker Routing
 
@@ -53,20 +55,27 @@ reapplies the diff deterministically, but the route is not operationally qualifi
   experiments with hard gates.
 - Default takeover: Codex after one rejected fast Candidate.
 - Structured edit route: `EXPERIMENTAL_NOT_DEFAULT`; both tested models are unqualified.
+- Semantic Anchor route: `PARTIAL_RESEARCH_EVIDENCE_NOT_DEFAULT`; no anchored model is
+  qualified.
 
 ## Latest Benchmark and Evidence
 
-- Run: `BENCH-20260830-111950`, suite `team-project-os-structured-edit-v1`.
+- Actual run: `BENCH-20260830-115232`, suite `team-project-os-semantic-anchor-v1`.
+- Corrected evaluator replay: `REPLAY-20260830-115613`, suite v2, zero model calls.
 - Runtime: 7B and 14B, temperature 0, seed 42, context 8192, timeout 300 s,
   repetitions 1, retries 0, sequential loopback Ollama.
-- Requests: 8/8; summed latency 82.454 s.
-- Direct diff: 0/4 hard-gate PASS, 0/4 deterministic apply, 0/4 focused test.
-- Structured edit: 0/4 hard-gate PASS, 2/4 deterministic apply/diff generation,
-  0/4 semantic/focused test PASS.
+- Requests: 4/4; summed latency 45.975 s.
+- TASK-005 baseline: each model 0/2 semantic, 1/2 deterministic apply/diff, 0/2 test.
+- Anchored 7B: 0/2 semantic, 2/2 apply/diff, 0/2 test, 0/2 hard-gate PASS.
+- Anchored 14B: 1/2 semantic, 2/2 apply/diff, 1/2 test, 0/2 hard-gate PASS.
+- Strict JSON: 0/4 because every model response was fenced.
+- Mean context: 3,034.5 baseline to 5,938.5 anchored characters, +95.7%.
 - Gold calibration: R001 and R002 both 100, all gates PASS.
 - Target baseline HEAD/hash/clean invariants: PASS before and after.
-- Diagnostic preflight `BENCH-20260830-111827` stopped before model calls on a
-  CRLF-sensitive multi-line Gold anchor; corrected before the evaluated run.
+- Suite v1 falsely accepted 7B R002 semantics. Suite v2 added an AST data-flow check and
+  replayed the same raw without new inference; v1 remains diagnostic Evidence.
+- Final verification: 42/42 tests, compile, Doctor, JSON/JSONL, secret scan, Target
+  invariants, and `git diff --check` PASS.
 
 ## Bootstrap Status
 
@@ -80,16 +89,19 @@ reapplies the diff deterministically, but the route is not operationally qualifi
 - Deterministic fenced diff/recount validation: IMPLEMENTED
 - Structured exact edit validation and deterministic diff assembly: IMPLEMENTED
 - Structured output operational qualification: FAILED
+- Deterministic AST/import/test Semantic Anchor Builder: IMPLEMENTED
+- Semantic Anchor operational qualification: FAILED; partial research evidence only
 - Minimal Harness: IN PROGRESS
 
 ## Known Problems
 
 - No installed Coder or Escalation model is qualified as a default.
 - Unified diff generation frequently produces invalid hunk counts or wrong context.
-- Both tested models fenced JSON despite a strict contract, chose wrong R001 import
-  semantics, and used an empty R002 preimage.
-- Structured assembly removes some serialization failures but does not improve final
-  acceptance until semantic and focused-test gates pass.
+- Both anchored models fenced JSON despite a strict contract.
+- 7B still chose wrong R001 import semantics; both models misunderstood R002 cursor
+  data flow despite explicit anchors and behavior assertions.
+- Semantic Anchors nearly doubled mean context and improved only one 14B semantic/test
+  case; no installed Coder passes the frozen multi-case hard gate.
 - Old-patch context can help one regression case and anchor an unrelated edit in another.
 - Planner and Reviewer semantic reliability remains conditional.
 - `run_task` still invokes Coder after a semantically invalid plan and lacks an automatic
@@ -99,9 +111,10 @@ reapplies the diff deterministically, but the route is not operationally qualifi
 
 ## Next Experiment
 
-Reuse R001/R002 with explicit behavior assertions and deterministic unique anchor
-choices. Keep the models, runtime, exact replacement, atomic apply, diff, and test gates
-fixed so the experiment isolates semantic/context and empty-preimage failures.
+Reuse R002 with a bounded Harness-produced behavior vector: eligible cursors,
+after-cursor boundary, content length, character limit, expected selected cursors, and
+expected total. Keep models, anchors, exact replacement, and gates fixed; do not provide
+answer code or add a model variable.
 
 ## Acceptance Rule
 

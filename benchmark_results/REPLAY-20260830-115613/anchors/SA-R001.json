@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "anchor_type": "ast_import_behavior_contract",
+  "behavior_contract": {
+    "current_behavior": "unittest discovery with -s tests loads the blocker module as a top-level test module, but its package-qualified sibling import raises ModuleNotFoundError",
+    "expected_behavior": "the sibling module must resolve from the tests discovery root without a package or relative prefix",
+    "target_symbol": "the ImportFrom node that imports CodexFixture and SESSION_ID",
+    "invariants": [
+      "preserve both imported names",
+      "preserve all test behavior"
+    ],
+    "allowed_change": "replace only the anchored import statement",
+    "forbidden_change": [
+      "relative import",
+      "fixture copying",
+      "production change",
+      "package-layout change"
+    ],
+    "verification": "python -m unittest discover -s tests -p test_v016_blocker_regressions.py -v"
+  },
+  "anchors": [
+    {
+      "anchor_id": "EDIT-IMPORT-001",
+      "role": "edit_target",
+      "path": "tests/test_v016_blocker_regressions.py",
+      "symbol": "tests.test_conversation_import_v016",
+      "kind": "import_from",
+      "containing": null,
+      "signature": "from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID",
+      "source": "from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID",
+      "preimage": "from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID",
+      "direct_callees": [],
+      "source_chars": 72
+    }
+  ]
+}

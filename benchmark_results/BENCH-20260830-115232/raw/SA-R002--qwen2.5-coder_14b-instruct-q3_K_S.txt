@@ -1,0 +1,11 @@
+```json
+{
+  "edits": [
+    {
+      "path": "tests/test_v016_blocker_regressions.py",
+      "old_text": "    def test_distiller_uses_disposable_tool_disabled_environment_and_schema(self):",
+      "new_text": "    def test_first_oversized_message_is_selected_for_progress(self):\r\n        messages = [\r\n            ConversationMessage(1, \"user\", \"x\" * 10000, \"\"),\r\n            ConversationMessage(2, \"user\", \"x\" * 10, \"\"),\r\n        ]\r\n\r\n        selected, total = select_message_chunk(\r\n            messages,\r\n            after_cursor=0,\r\n            max_messages=10,\r\n            max_characters=10,\r\n        )\r\n        self.assertEqual([item.cursor for item in selected], [1])\r\n        self.assertEqual(total, 2)\r\n\r\n        selected, total = select_message_chunk(\r\n            messages,\r\n            after_cursor=0,\r\n            max_messages=10,\r\n            max_characters=10000,\r\n        )\r\n        self.assertEqual([item.cursor for item in selected], [1, 2])\r\n        self.assertEqual(total, 2)\r\n\r\n    def test_distiller_uses_disposable_tool_disabled_environment_and_schema(self):"
+    }
+  ]
+}
+```

@@ -116,6 +116,14 @@ checks, reapplies, and tests the diff deterministically. This route is not a def
 7B/14B both passed 0/2 final structured hard-gate cases, despite 1/2 deterministic
 application success each.
 
+TASK-006 adds an experimental Semantic Anchor Builder. It uses Python AST and exact
+source identity to provide path, symbol kind/name/signature, bounded source/imports, a
+related test symbol, and explicit current/expected/preserved behavior. Line numbers are
+diagnostic metadata only. Anchored output still uses the TASK-005 structured-edit
+transport and the same deterministic gates. The route is not a default: corrected v2
+Evidence produced 0/4 final hard-gate passes, although deterministic apply/diff reached
+2/2 per model and one 14B case passed semantic and focused-test checks.
+
 Routing is qualification-aware rather than model-name authoritative. Conditional or
 unqualified routes remain useful only because deterministic validation rejects unsafe
 outputs and bounded execution ends in Codex takeover.
