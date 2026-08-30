@@ -1,0 +1,109 @@
+{
+  "models": [
+    {
+      "role": "coder",
+      "model": "qwen2.5-coder:7b",
+      "slots": 4,
+      "request_successes": 4,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 20,
+      "mean_latency_seconds": 5.02,
+      "qualified": false
+    },
+    {
+      "role": "coder",
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "slots": 4,
+      "request_successes": 4,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "mean_score": 21.25,
+      "mean_latency_seconds": 15.59,
+      "qualified": false
+    }
+  ],
+  "recommendations": {
+    "coder": {
+      "primary": null,
+      "fallback": null,
+      "best_observed": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "primary_qualified": false,
+      "reason": "hard gates 0/4, mean score 21.25, mean latency 15.59s"
+    }
+  },
+  "contract_comparison": [
+    {
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "candidate_format": "direct_diff",
+      "slots": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "semantic_passes": 0,
+      "contract_passes": 0,
+      "deterministic_application_passes": 0,
+      "generated_diff_passes": 0,
+      "focused_test_passes": 0,
+      "mean_score": 10,
+      "mean_latency_seconds": 22.08,
+      "qualified": false
+    },
+    {
+      "model": "qwen2.5-coder:14b-instruct-q3_K_S",
+      "candidate_format": "structured_edit",
+      "slots": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "semantic_passes": 0,
+      "contract_passes": 0,
+      "deterministic_application_passes": 1,
+      "generated_diff_passes": 1,
+      "focused_test_passes": 0,
+      "mean_score": 32.5,
+      "mean_latency_seconds": 9.1,
+      "qualified": false
+    },
+    {
+      "model": "qwen2.5-coder:7b",
+      "candidate_format": "direct_diff",
+      "slots": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "semantic_passes": 0,
+      "contract_passes": 0,
+      "deterministic_application_passes": 0,
+      "generated_diff_passes": 0,
+      "focused_test_passes": 0,
+      "mean_score": 7.5,
+      "mean_latency_seconds": 7.55,
+      "qualified": false
+    },
+    {
+      "model": "qwen2.5-coder:7b",
+      "candidate_format": "structured_edit",
+      "slots": 2,
+      "hard_gate_passes": 0,
+      "hard_gate_rate": 0.0,
+      "semantic_passes": 0,
+      "contract_passes": 0,
+      "deterministic_application_passes": 1,
+      "generated_diff_passes": 1,
+      "focused_test_passes": 0,
+      "mean_score": 32.5,
+      "mean_latency_seconds": 2.49,
+      "qualified": false
+    }
+  ],
+  "run_id": "BENCH-20260830-111950",
+  "suite_id": "team-project-os-structured-edit-v1",
+  "completed_at": "2026-08-30T02:21:34.346073+00:00",
+  "slot_count": 8,
+  "target_after": {
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "clean": true,
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1"
+    }
+  }
+}

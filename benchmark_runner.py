@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 
 from ai_worker import ROOT, ollama_chat_detailed, run_cmd
+from structured_edit import apply_exact_edits, parse_structured_candidate
 
 
 ROLE_ORDER = ["scout", "planner", "coder", "reviewer", "escalation_coder"]
@@ -71,6 +72,17 @@ def validate_suite(suite: dict) -> None:
     runtime = suite["runtime"]
     if runtime.get("retries") != 0 or runtime.get("repetitions") != 1:
         raise ValueError("v1 benchmark freezes retries=0 and repetitions=1")
+    for case in suite["cases"]:
+        output_contract = case.get("output_contract", "direct_diff")
+        if output_contract not in {"direct_diff", "structured_edit"}:
+            raise ValueError(f"unknown output contract: {output_contract}")
+        if output_contract == "structured_edit":
+            required = {"gold_candidate", "max_edits"}
+            missing_case_keys = sorted(required - set(case))
+            if missing_case_keys:
+                raise ValueError(
+                    f"structured case {case['case_id']} missing keys: {missing_case_keys}"
+                )
 
 
 def require_loopback(url: str) -> None:
@@ -189,13 +201,41 @@ def build_prompt(case: dict, role: str, target_repo: Path, files: list[str]) -> 
         user = f"CASE: {case['case_id']}\nTASK:\n{case['task']}\n\nBOUNDED CONTEXT:\n{context}"
         return system, user, len(context)
     if role == "coder":
-        system = (
-            f"You are a bounded coding Worker. {boundary} Output only a complete unified diff "
-            "for git apply, without markdown fences or explanation. Keep the change minimal and "
-            "never claim tests were executed."
-        )
-        user = f"CASE: {case['case_id']}\nTASK:\n{case['task']}\n\nBOUNDED CONTEXT:\n{context}"
-        return system, user, len(context)
+        if case.get("output_contract", "direct_diff") == "structured_edit":
+            system = (
+                f"You are a bounded coding Worker. {boundary} Return exactly one strict JSON "
+                'object with key "edits". Each edit must contain exactly string keys "path", '
+                '"old_text", and "new_text". Copy old_text exactly from the supplied context; '
+                "it must identify one unique occurrence. Prefer the smallest unique snippet, "
+                "especially one line, so newline encoding is not part of the identity. "
+                "Do not use line numbers as identity, "
+                "Markdown fences, unified diff syntax, explanation, or test claims."
+            )
+        else:
+            system = (
+                f"You are a bounded coding Worker. {boundary} Output only a complete unified diff "
+                "for git apply, without markdown fences or explanation. Keep the change minimal and "
+                "never claim tests were executed."
+            )
+        sections = [f"CASE: {case['case_id']}", f"TASK:\n{case['task']}"]
+        newline_note = ""
+        if case.get("output_contract") == "structured_edit":
+            newline_styles = []
+            for relative in case["allowed_files"]:
+                data = (target_repo / relative).read_bytes()
+                style = "CRLF" if b"\r\n" in data else "LF"
+                newline_styles.append(f"{relative}={style}")
+            newline_note = (
+                "TARGET NEWLINE STYLE:\n"
+                + ", ".join(newline_styles)
+                + ". Encode multiline new_text with the matching JSON newline escapes."
+            )
+            sections.append(newline_note)
+        if case.get("feedback"):
+            sections.append(f"SUPERVISOR REQUIREMENTS:\n{case['feedback']}")
+        sections.append(f"BOUNDED CONTEXT:\n{context}")
+        user = "\n\n".join(sections)
+        return system, user, len(context) + len(case.get("feedback", "")) + len(newline_note)
     if role == "reviewer":
         taxonomy = "\n".join(f"- {key}: {value}" for key, value in ISSUE_TAXONOMY.items())
         patch = (ROOT / case["candidate_patch"]).read_text(encoding="utf-8")
@@ -467,6 +507,7 @@ def evaluate_patch(case: dict, raw: str, target_repo: Path, minimum: int) -> dic
     if case.get("require_revision_change"):
         hard_gates["meaningful_revision"] = meaningful_revision
     return {
+        "candidate_format": "direct_diff",
         "schema_valid": patch_extractable,
         "strict_schema_valid": strict_patch_format,
         "format_normalized": patch_extractable and not strict_patch_format,
@@ -483,6 +524,175 @@ def evaluate_patch(case: dict, raw: str, target_repo: Path, minimum: int) -> dic
         "test_exit_code": test_exit_code,
         "test_output": test_output,
         "apply_output": apply_output[-2000:],
+        "semantic_correctness": terms_ok and test_ok,
+        "structured_contract_correctness": None,
+        "deterministic_application_correctness": apply_ok,
+        "generated_diff_correctness": patch_extractable and apply_ok,
+        "focused_test_correctness": test_ok,
+        "score": score,
+        "hard_gates": hard_gates,
+    }
+
+
+def _sha256_file(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def evaluate_structured_edit(case: dict, raw: str, target_repo: Path, minimum: int) -> dict:
+    payload, schema_valid, strict_schema, contract_errors = parse_structured_candidate(raw)
+    application = {
+        "path_validation": False,
+        "preconditions_valid": False,
+        "stale_state_valid": False,
+        "unique_occurrences": False,
+        "occurrence_counts": [],
+        "errors": [],
+        "changed_files": [],
+        "preimage_sha256": {},
+        "postimage_sha256": {},
+        "atomic_application": False,
+    }
+    changed_files: list[str] = []
+    generated_patch = ""
+    generated_diff_check = False
+    generated_apply_check = False
+    postimage_match = False
+    required_terms_missing = list(case["required_patch_terms"])
+    test_exit_code = None
+    test_output = ""
+    gate_output = ""
+    size = {"added_lines": 0, "removed_lines": 0, "changed_lines": 0, "within_limit": False}
+
+    with tempfile.TemporaryDirectory(prefix="ai-worker-structured-") as directory:
+        root = Path(directory)
+        assembly_repo = root / "assembly"
+        clone = run_cmd(
+            ["git", "clone", "--quiet", "--no-hardlinks", str(target_repo), str(assembly_repo)]
+        )
+        if clone.returncode != 0:
+            gate_output = (clone.stdout + clone.stderr).strip()
+        elif schema_valid:
+            checkout = run_cmd(
+                ["git", "checkout", "--quiet", "--detach", "HEAD"], cwd=assembly_repo
+            )
+            if checkout.returncode == 0:
+                application = apply_exact_edits(
+                    assembly_repo,
+                    payload,
+                    allowed_files=case["allowed_files"],
+                    max_edits=case["max_edits"],
+                )
+            else:
+                gate_output = (checkout.stdout + checkout.stderr).strip()
+
+        if application["atomic_application"]:
+            names = run_cmd(
+                ["git", "diff", "--name-only"], cwd=assembly_repo, check=True
+            ).stdout
+            changed_files = [line.strip().replace("\\", "/") for line in names.splitlines()]
+            generated_patch = run_cmd(
+                ["git", "diff", "--no-ext-diff", "--binary"], cwd=assembly_repo, check=True
+            ).stdout
+            checked = run_cmd(["git", "diff", "--check"], cwd=assembly_repo)
+            generated_diff_check = checked.returncode == 0 and bool(generated_patch.strip())
+            gate_output = (checked.stdout + checked.stderr).strip()
+            size = patch_size_evidence(case, generated_patch)
+            required_terms_missing = [
+                term for term in case["required_patch_terms"] if term not in generated_patch
+            ]
+
+            validation_repo = root / "validation"
+            validation_clone = run_cmd(
+                ["git", "clone", "--quiet", "--no-hardlinks", str(target_repo), str(validation_repo)]
+            )
+            patch_path = root / "generated.patch"
+            patch_path.write_text(generated_patch, encoding="utf-8")
+            if validation_clone.returncode == 0:
+                run_cmd(["git", "checkout", "--quiet", "--detach", "HEAD"], cwd=validation_repo)
+                apply_check = run_cmd(
+                    ["git", "apply", "--check", str(patch_path)], cwd=validation_repo
+                )
+                generated_apply_check = apply_check.returncode == 0
+                gate_output = (
+                    gate_output + "\n" + apply_check.stdout + apply_check.stderr
+                ).strip()
+                if generated_apply_check:
+                    applied = run_cmd(["git", "apply", str(patch_path)], cwd=validation_repo)
+                    generated_apply_check = applied.returncode == 0
+                if generated_apply_check:
+                    postimage_match = all(
+                        _sha256_file(validation_repo / path)
+                        == application["postimage_sha256"][path]
+                        for path in changed_files
+                    )
+                    if case.get("ensure_test_package", True):
+                        (validation_repo / "tests" / "__init__.py").touch()
+                    tested = run_cmd(case["test_command"], cwd=validation_repo)
+                    test_exit_code = tested.returncode
+                    test_output = (tested.stdout + tested.stderr)[-4000:]
+
+    allowed = set(case["allowed_files"])
+    disallowed = [path for path in changed_files if path not in allowed]
+    allowed_only = bool(changed_files) and not disallowed
+    terms_ok = not required_terms_missing
+    test_ok = test_exit_code == 0
+    structured_contract_ok = schema_valid and strict_schema
+    deterministic_application_ok = (
+        application["preconditions_valid"]
+        and application["atomic_application"]
+        and application["stale_state_valid"]
+        and application["unique_occurrences"]
+    )
+    generated_diff_ok = generated_diff_check and generated_apply_check and postimage_match
+    semantic_ok = terms_ok and test_ok
+    score = round(
+        15 * structured_contract_ok
+        + 10 * application["path_validation"]
+        + 15 * application["preconditions_valid"]
+        + 15 * deterministic_application_ok
+        + 10 * allowed_only
+        + 10 * terms_ok
+        + 10 * generated_diff_ok
+        + 10 * test_ok
+        + 5 * size["within_limit"],
+        2,
+    )
+    hard_gates = {
+        "strict_structured_contract": structured_contract_ok,
+        "path_validation": application["path_validation"],
+        "exact_preimage": application["preconditions_valid"] and application["stale_state_valid"],
+        "unique_occurrence": application["unique_occurrences"],
+        "atomic_application": deterministic_application_ok,
+        "allowed_files_only": allowed_only,
+        "semantic_requirements": terms_ok,
+        "generated_diff": generated_diff_ok,
+        "focused_test": test_ok,
+        "diff_size": size["within_limit"],
+        "minimum_score": score >= minimum,
+    }
+    return {
+        "candidate_format": "structured_edit",
+        "schema_valid": schema_valid,
+        "strict_schema_valid": schema_valid and strict_schema,
+        "contract_errors": contract_errors,
+        "application": application,
+        "hallucination_count": len(disallowed),
+        "git_apply_check": generated_apply_check,
+        "changed_files": changed_files,
+        "missing_patch_terms": required_terms_missing,
+        **size,
+        "generated_patch": generated_patch,
+        "generated_diff_check": generated_diff_check,
+        "postimage_match": postimage_match,
+        "test_result": "PASS" if test_ok else "FAIL" if test_exit_code is not None else "NOT_RUN",
+        "test_exit_code": test_exit_code,
+        "test_output": test_output,
+        "apply_output": gate_output[-2000:],
+        "semantic_correctness": semantic_ok,
+        "structured_contract_correctness": structured_contract_ok,
+        "deterministic_application_correctness": deterministic_application_ok,
+        "generated_diff_correctness": generated_diff_ok,
+        "focused_test_correctness": test_ok,
         "score": score,
         "hard_gates": hard_gates,
     }
@@ -545,6 +755,8 @@ def evaluate(case: dict, raw: str, target_repo: Path, files: list[str], minimum:
         return evaluate_scout(case, raw, files, minimum)
     if role == "planner":
         return evaluate_planner(case, raw, files, minimum)
+    if case.get("output_contract") == "structured_edit":
+        return evaluate_structured_edit(case, raw, target_repo, minimum)
     if role in {"coder", "escalation_coder"}:
         return evaluate_patch(case, raw, target_repo, minimum)
     if role == "reviewer":
@@ -611,7 +823,73 @@ def summarize_results(suite: dict, results: list[dict]) -> dict:
                 f"mean latency {candidates[0]['mean_latency_seconds']}s"
             ),
         }
-    return {"models": model_summaries, "recommendations": recommendations}
+    contract_groups = defaultdict(list)
+    for result in results:
+        contract_groups[(result["model"], result.get("candidate_format", "other"))].append(result)
+    contract_models = []
+    for (model, candidate_format), slots in contract_groups.items():
+        hard_passes = sum(all_hard_gates_pass(slot) for slot in slots)
+        contract_models.append(
+            {
+                "model": model,
+                "candidate_format": candidate_format,
+                "slots": len(slots),
+                "hard_gate_passes": hard_passes,
+                "hard_gate_rate": round(hard_passes / len(slots), 3),
+                "semantic_passes": sum(bool(slot.get("semantic_correctness")) for slot in slots),
+                "contract_passes": sum(
+                    slot.get("structured_contract_correctness") is True for slot in slots
+                ),
+                "deterministic_application_passes": sum(
+                    bool(slot.get("deterministic_application_correctness")) for slot in slots
+                ),
+                "generated_diff_passes": sum(
+                    bool(slot.get("generated_diff_correctness")) for slot in slots
+                ),
+                "focused_test_passes": sum(
+                    bool(slot.get("focused_test_correctness")) for slot in slots
+                ),
+                "mean_score": round(statistics.mean(slot.get("score", 0) for slot in slots), 2),
+                "mean_latency_seconds": round(
+                    statistics.mean(slot.get("latency_seconds", 0) for slot in slots), 2
+                ),
+                "qualified": hard_passes == len(slots),
+            }
+        )
+    contract_models.sort(key=lambda item: (item["model"], item["candidate_format"]))
+    return {
+        "models": model_summaries,
+        "recommendations": recommendations,
+        "contract_comparison": contract_models,
+    }
+
+
+def calibrate_structured_cases(suite: dict, target_repo: Path, output_dir: Path) -> list[dict]:
+    results = []
+    for case in suite["cases"]:
+        if case.get("output_contract") != "structured_edit":
+            continue
+        raw = (ROOT / case["gold_candidate"]).read_text(encoding="utf-8")
+        result = evaluate_structured_edit(
+            case,
+            raw,
+            target_repo,
+            suite["minimum_scores"][case["role"]],
+        )
+        results.append(
+            {
+                "case_id": case["case_id"],
+                "gold_candidate": case["gold_candidate"],
+                **result,
+            }
+        )
+    (output_dir / "gold_calibration.json").write_text(
+        json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    failed = [result["case_id"] for result in results if not all_hard_gates_pass(result)]
+    if failed:
+        raise RuntimeError(f"structured evaluator gold calibration failed: {failed}")
+    return results
 
 
 def safe_name(value: str) -> str:
@@ -671,6 +949,7 @@ def run_benchmark(
     (output_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    calibrate_structured_cases(suite, target_repo, output_dir)
 
     results = []
     results_path = output_dir / "results.jsonl"
@@ -707,6 +986,7 @@ def run_benchmark(
                     "failure_reason": "",
                     "feedback_variant": case.get("feedback_variant"),
                     "include_old_patch": case.get("include_old_patch"),
+                    "candidate_format": case.get("output_contract", "direct_diff"),
                 }
                 try:
                     request_started = time.perf_counter()

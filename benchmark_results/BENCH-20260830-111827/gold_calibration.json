@@ -1,0 +1,129 @@
+[
+  {
+    "case_id": "SE-R001-STRUCT",
+    "gold_candidate": "benchmarks/fixtures/structured_r001_gold.json",
+    "candidate_format": "structured_edit",
+    "schema_valid": true,
+    "strict_schema_valid": true,
+    "contract_errors": [],
+    "application": {
+      "path_validation": true,
+      "preconditions_valid": true,
+      "stale_state_valid": true,
+      "unique_occurrences": true,
+      "occurrence_counts": [
+        1
+      ],
+      "errors": [],
+      "changed_files": [
+        "tests/test_v016_blocker_regressions.py"
+      ],
+      "preimage_sha256": {
+        "tests/test_v016_blocker_regressions.py": "b586ba1f5100b920fd6ed2f87b2416309d66a34a8bd9318aba70cf0340139295"
+      },
+      "postimage_sha256": {
+        "tests/test_v016_blocker_regressions.py": "a9d7facccd1812619b2a08587c8cc4840e9e928438e4e18f00a7e98abc331dca"
+      },
+      "atomic_application": true
+    },
+    "hallucination_count": 0,
+    "git_apply_check": true,
+    "changed_files": [
+      "tests/test_v016_blocker_regressions.py"
+    ],
+    "missing_patch_terms": [],
+    "added_lines": 1,
+    "removed_lines": 1,
+    "changed_lines": 2,
+    "within_limit": true,
+    "generated_patch": "diff --git a/tests/test_v016_blocker_regressions.py b/tests/test_v016_blocker_regressions.py\nindex 2de5996..2c319e1 100644\n--- a/tests/test_v016_blocker_regressions.py\n+++ b/tests/test_v016_blocker_regressions.py\n@@ -18,7 +18,7 @@ from app.materializer_v015 import (\n )\n from app.structured_state_v016 import rebase_conflicts\n from local_bridge.providers import ProviderResult, build_invocation\n-from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID\n+from test_conversation_import_v016 import CodexFixture, SESSION_ID\n \n \n EMPTY_DELTA = {\n",
+    "generated_diff_check": true,
+    "postimage_match": true,
+    "test_result": "PASS",
+    "test_exit_code": 0,
+    "test_output": "test_api_exposes_and_processes_only_the_next_bounded_chunk (test_v016_blocker_regressions.V016BlockerApiTests.test_api_exposes_and_processes_only_the_next_bounded_chunk) ... ok\ntest_api_rejects_a_cursor_that_skips_unimported_messages (test_v016_blocker_regressions.V016BlockerApiTests.test_api_rejects_a_cursor_that_skips_unimported_messages) ... ok\ntest_conflicting_stable_ref_is_rejected_before_draft_and_apply (test_v016_blocker_regressions.V016BlockerApiTests.test_conflicting_stable_ref_is_rejected_before_draft_and_apply) ... ok\ntest_cursor_progresses_across_multiple_bounded_chunks (test_v016_blocker_regressions.V016BlockerApiTests.test_cursor_progresses_across_multiple_bounded_chunks) ... ok\ntest_non_conflicting_edits_rebase_through_draft_and_apply (test_v016_blocker_regressions.V016BlockerApiTests.test_non_conflicting_edits_rebase_through_draft_and_apply) ... ok\ntest_preview_detects_a_same_identity_edit_during_distillation (test_v016_blocker_regressions.V016BlockerApiTests.test_preview_detects_a_same_identity_edit_during_distillation) ... ok\ntest_reconciliation_prefers_official_rows_and_documents_over_stale_cache (test_v016_blocker_regressions.V016BlockerApiTests.test_reconciliation_prefers_official_rows_and_documents_over_stale_cache) ... ok\ntest_structured_state_reconciles_current_database_and_canonical_documents (test_v016_blocker_regressions.V016BlockerApiTests.test_structured_state_reconciles_current_database_and_canonical_documents) ... ok\ntest_v015_bootstrap_recovers_all_catalog_stable_ids_without_a_cache (test_v016_blocker_regressions.V016BlockerApiTests.test_v015_bootstrap_recovers_all_catalog_stable_ids_without_a_cache) ... ok\ntest_distiller_uses_disposable_tool_disabled_environment_and_schema (test_v016_blocker_regressions.V016BlockerUnitTests.test_distiller_uses_disposable_tool_disabled_environment_and_schema) ... ok\ntest_message_chunk_is_contiguous_and_bounded (test_v016_blocker_regressions.V016BlockerUnitTests.test_message_chunk_is_contiguous_and_bounded) ... ok\ntest_non_regressive_document_merge_rebuilds_one_bounded_addition_block (test_v016_blocker_regressions.V016BlockerUnitTests.test_non_regressive_document_merge_rebuilds_one_bounded_addition_block) ... ok\ntest_rebase_conflicts_use_requirement_ref_and_true_three_way_semantics (test_v016_blocker_regressions.V016BlockerUnitTests.test_rebase_conflicts_use_requirement_ref_and_true_three_way_semantics) ... ok\ntest_session_metadata_cache_reuses_unchanged_rollout_and_invalidates_on_change (test_v016_blocker_regressions.V016BlockerUnitTests.test_session_metadata_cache_reuses_unchanged_rollout_and_invalidates_on_change) ... ok\n\n----------------------------------------------------------------------\nRan 14 tests in 1.648s\n\nOK\n",
+    "apply_output": "",
+    "semantic_correctness": true,
+    "structured_contract_correctness": true,
+    "deterministic_application_correctness": true,
+    "generated_diff_correctness": true,
+    "focused_test_correctness": true,
+    "score": 100,
+    "hard_gates": {
+      "strict_structured_contract": true,
+      "path_validation": true,
+      "exact_preimage": true,
+      "unique_occurrence": true,
+      "atomic_application": true,
+      "allowed_files_only": true,
+      "semantic_requirements": true,
+      "generated_diff": true,
+      "focused_test": true,
+      "diff_size": true,
+      "minimum_score": true
+    }
+  },
+  {
+    "case_id": "SE-R002-STRUCT",
+    "gold_candidate": "benchmarks/fixtures/structured_r002_gold.json",
+    "candidate_format": "structured_edit",
+    "schema_valid": true,
+    "strict_schema_valid": true,
+    "contract_errors": [],
+    "application": {
+      "path_validation": true,
+      "preconditions_valid": false,
+      "stale_state_valid": false,
+      "unique_occurrences": false,
+      "occurrence_counts": [
+        0
+      ],
+      "errors": [
+        "edit 0 old_text occurrence count is 0, expected 1"
+      ],
+      "changed_files": [],
+      "preimage_sha256": {},
+      "postimage_sha256": {},
+      "atomic_application": false
+    },
+    "hallucination_count": 0,
+    "git_apply_check": false,
+    "changed_files": [],
+    "missing_patch_terms": [
+      "test_first_oversized_message_is_selected_for_progress",
+      "select_message_chunk",
+      "max_characters",
+      "assertEqual"
+    ],
+    "added_lines": 0,
+    "removed_lines": 0,
+    "changed_lines": 0,
+    "within_limit": false,
+    "generated_patch": "",
+    "generated_diff_check": false,
+    "postimage_match": false,
+    "test_result": "NOT_RUN",
+    "test_exit_code": null,
+    "test_output": "",
+    "apply_output": "",
+    "semantic_correctness": false,
+    "structured_contract_correctness": true,
+    "deterministic_application_correctness": false,
+    "generated_diff_correctness": false,
+    "focused_test_correctness": false,
+    "score": 25,
+    "hard_gates": {
+      "strict_structured_contract": true,
+      "path_validation": true,
+      "exact_preimage": false,
+      "unique_occurrence": false,
+      "atomic_application": false,
+      "allowed_files_only": false,
+      "semantic_requirements": false,
+      "generated_diff": false,
+      "focused_test": false,
+      "diff_size": false,
+      "minimum_score": false
+    }
+  }
+]

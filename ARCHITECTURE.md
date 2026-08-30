@@ -102,15 +102,23 @@ Codex
   then `qwen3.5:9b` fallback or Codex.
 - Planner: `qwen3:8b`; schema/file selection never substitutes for behavior-semantic
   validation. 14B is the bounded fallback.
-- Coder: `qwen2.5-coder:7b` is only a fast candidate generator. It did not qualify on
-  CODE-001 and therefore cannot bypass patch/apply/test gates.
+- Coder: `qwen2.5-coder:7b` is only a reject-only fast Candidate. It cannot bypass
+  schema/semantic/apply/test gates; the default fallback is Codex takeover.
 - Reviewer: Mistral Nemo for ordinary regression review; Qwen 14B for filesystem and
   security review. No single tested model passed both reviewer cases.
-- Escalation Coder: Qwen 14B after explicit supervisor feedback; qualified on ESC-001.
+- Escalation Coder: no installed model is qualified as a default. Qwen 14B is retained
+  as `UNQUALIFIED_RESEARCH_ONLY` after TASK-004 passed 0/4 strict and 1/4 recounted slots.
+
+TASK-005 adds an experimental exact structured-edit contract. A Worker may return strict
+JSON edits with an allowed path plus exact old/new text. The Harness validates every
+precondition before atomic logical application in a disposable clone, then constructs,
+checks, reapplies, and tests the diff deterministically. This route is not a default:
+7B/14B both passed 0/2 final structured hard-gate cases, despite 1/2 deterministic
+application success each.
 
 Routing is qualification-aware rather than model-name authoritative. Conditional or
 unqualified routes remain useful only because deterministic validation rejects unsafe
-outputs and bounded escalation ends in Codex takeover.
+outputs and bounded execution ends in Codex takeover.
 
 ## Context Policy
 

@@ -1,0 +1,41 @@
+{
+  "decision_version": 1,
+  "run_id": "BENCH-20260830-111950",
+  "suite": "team-project-os-structured-edit-v1",
+  "decision": "STRUCTURED_EDIT_NOT_OPERATIONALLY_QUALIFIED",
+  "model_calls": 8,
+  "retries": 0,
+  "summed_latency_seconds": 82.454,
+  "hard_gate_result": {
+    "direct_diff": {"passes": 0, "slots": 4},
+    "structured_edit": {"passes": 0, "slots": 4}
+  },
+  "correctness_layers": {
+    "direct_diff": {
+      "semantic_correctness": "0/4",
+      "deterministic_application_correctness": "0/4",
+      "generated_diff_correctness": "0/4",
+      "focused_test_correctness": "0/4"
+    },
+    "structured_edit": {
+      "semantic_correctness": "0/4",
+      "structured_contract_correctness": "0/4 strict; 2/4 extractable fenced JSON",
+      "deterministic_application_correctness": "2/4",
+      "generated_diff_correctness": "2/4",
+      "focused_test_correctness": "0/4"
+    }
+  },
+  "model_qualification": {
+    "qwen2.5-coder:7b": "UNQUALIFIED",
+    "qwen2.5-coder:14b-instruct-q3_K_S": "UNQUALIFIED_RESEARCH_ONLY"
+  },
+  "interpretation": "Structured edits removed patch serialization failure for both R001 slots, but both models chose the wrong relative-import semantics. Both R002 structured slots violated the contract with an empty old_text and also encoded total=2 instead of the required total=1. Output serialization is a real but non-exclusive bottleneck.",
+  "routing": {
+    "default_coder": "qwen2.5-coder:7b reject-only fast Candidate",
+    "default_escalation": null,
+    "structured_edit": "EXPERIMENTAL_NOT_DEFAULT",
+    "takeover": "Codex after one rejected fast Candidate"
+  },
+  "target_invariants": "PASS",
+  "next_task": "TASK-006 - Behavior assertion and Harness-provided anchor experiment"
+}

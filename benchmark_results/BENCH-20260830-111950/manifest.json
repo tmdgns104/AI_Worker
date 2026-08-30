@@ -1,0 +1,42 @@
+{
+  "run_id": "BENCH-20260830-111950",
+  "suite_id": "team-project-os-structured-edit-v1",
+  "started_at": "2026-08-30T02:19:50.252987+00:00",
+  "ollama_url": "http://127.0.0.1:11434",
+  "target_before": {
+    "head": "3c05219d50a51f2bdad8e6671e702e8c5d575e50",
+    "clean": true,
+    "file_hashes": {
+      "app/conversation_import.py": "a063f701aa346eeb60ff3f356de3809c9100dbd6",
+      "tests/test_v016_blocker_regressions.py": "2de5996aeae935937a05b70fd64c2117607f58a1"
+    }
+  },
+  "runtime": {
+    "temperature": 0.0,
+    "seed": 42,
+    "num_ctx": 8192,
+    "timeout_seconds": 300,
+    "repetitions": 1,
+    "retries": 0,
+    "execution": "sequential",
+    "fallback": "none"
+  },
+  "models": {
+    "qwen2.5-coder:7b": {
+      "digest": "dae161e27b0e90dd1856c8bb3209201fd6736d8eb66298e75ed87571486f4364",
+      "size": 4683087561,
+      "parameter_size": "7.6B",
+      "quantization_level": "Q4_K_M",
+      "format": "gguf",
+      "family": "qwen2"
+    },
+    "qwen2.5-coder:14b-instruct-q3_K_S": {
+      "digest": "ff7e2b2086f712b6825d425ef5258234de6814b69cf4cf8b52cebcfef5a5396a",
+      "size": 6659609738,
+      "parameter_size": "14.8B",
+      "quantization_level": "Q3_K_S",
+      "format": "gguf",
+      "family": "qwen2"
+    }
+  }
+}

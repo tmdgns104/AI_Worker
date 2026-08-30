@@ -220,3 +220,46 @@ Unified diff generation remains unreliable. TASK-005 will test structured exact
 replacement output and deterministic patch assembly before considering a new model.
 Three ignored TASK-004 disposable directories remain under `state/` because recursive
 cleanup was blocked by the execution policy; no tracked or Target state depends on them.
+
+---
+
+## 2026-08-30 — D-006 Structured Edit Harness and Qualification
+
+### Task
+
+Implement and evaluate an exact old/new Candidate contract against direct unified diff
+using the frozen TASK-004 cases and the installed 7B/14B Coder models.
+
+### Changed
+
+- Added strict structured Candidate parsing with safe path, non-empty/no-op, unique exact
+  preimage, overlap, stale-state, and max-edit validation.
+- Added all-precondition-first multi-edit staging and atomic per-file replacement with
+  rollback on write failure in disposable clones.
+- Added deterministic diff generation, `git diff --check`, clean-clone `git apply
+  --check`, reapplication, postimage hash comparison, and exact focused tests.
+- Added the frozen direct/structured suite, two structured Gold Candidates, raw JSONL
+  Evidence, correctness-layer summaries, and supervisor decision.
+- Added focused tests for strict/fenced schema, unsafe path, ambiguity, stale atomicity,
+  safe application, generated diff reapplication, and separated summary metrics.
+- Recorded ADR-010, routing/status/research/benchmark updates, and proposed TASK-006.
+
+### Verification
+
+- Gold preflight: first run stopped with 0 model calls on CRLF anchor mismatch; retained
+- Corrected Gold calibration: 2/2 at score 100, every hard gate PASS
+- Actual benchmark: 8/8 requests, retry 0, Target hashes/HEAD/clean before and after PASS
+- Model qualification: FAIL; direct 0/4 and structured 0/4 final hard-gate PASS
+- Focused Harness tests: 24/24 PASS after one recorded wrong module-address command
+- Final full tests/compile/Doctor/JSON/diff and Git checks: recorded in completion evidence
+
+### Result
+
+Harness experiment PASS; structured contract and both models FAIL qualification.
+Deterministic assembly recovered two syntactically applicable edit ideas but focused tests
+proved both semantically wrong. Operational routing remains unchanged.
+
+### Remaining
+
+TASK-006 should isolate semantic/context and empty-preimage failures using Harness-provided
+unique anchors and explicit behavior assertions, without adding a model variable.

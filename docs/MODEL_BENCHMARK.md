@@ -206,3 +206,33 @@ Reviewer:    unchanged conditional split; never authoritative
 
 No model was downloaded. The next experiment targets output-contract reliability before
 introducing another model variable.
+
+## BENCH-20260830-111950 — Structured Edit Contract
+
+Frozen runtime: clean disposable Target at `3c05219`, Qwen Coder 7B Q4_K_M and 14B
+Q3_K_S, temperature 0, seed 42, context 8192, timeout 300 s, repetition 1, retry 0,
+sequential loopback Ollama. Both structured Gold Candidates passed every gate at 100.
+
+| Model | Contract | Hard PASS | Semantic | Deterministic apply | Generated diff | Focused test | Mean latency |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Qwen Coder 7B | direct diff | 0/2 | 0/2 | 0/2 | 0/2 | 0/2 | 7.55 s |
+| Qwen Coder 7B | structured edit | 0/2 | 0/2 | 1/2 | 1/2 | 0/2 | 2.49 s |
+| Qwen Coder 14B | direct diff | 0/2 | 0/2 | 0/2 | 0/2 | 0/2 | 22.08 s |
+| Qwen Coder 14B | structured edit | 0/2 | 0/2 | 1/2 | 1/2 | 0/2 | 9.10 s |
+
+Structured output improved serialization/application but not final quality. Both models
+returned fenced JSON, chose wrong relative-import semantics in R001, and used an empty
+preimage with wrong total semantics in R002. There is no qualified Coder or escalation
+model, and no new model was downloaded.
+
+### Routing after TASK-005
+
+```text
+Coder:          qwen2.5-coder:7b optional reject-only Candidate -> hard gates -> Codex
+Escalation:     no qualified default
+Qwen 14B:       UNQUALIFIED_RESEARCH_ONLY
+Structured edit: EXPERIMENTAL_NOT_DEFAULT
+Reviewer:       unchanged conditional split; never authoritative
+```
+
+The next comparison changes context/anchor selection while holding models and gates fixed.

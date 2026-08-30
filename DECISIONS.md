@@ -138,3 +138,25 @@ TASK-004 found one logically correct Candidate whose only defect was malformed h
 counts; deterministic recount plus exact tests recovered it. Three other Candidates still
 failed context, requirement, size, or test gates. This supports narrow repair while
 rejecting both false qualification and blanket patch rewriting.
+
+---
+
+## ADR-010 - Structured exact edits remain experimental until semantic qualification
+
+**Status:** ACCEPTED
+
+The Harness may parse bounded exact `path`/`old_text`/`new_text` Candidates, validate all
+preconditions before writing, apply them atomically in a disposable clone, and construct
+the unified diff deterministically. This contract is not a default Coder route until
+multiple representative cases pass strict schema, semantic, apply, and exact-test gates.
+
+TASK-005 produced zero final hard-gate passes for both direct diff and structured output.
+Structured output did improve deterministic application from 0/4 to 2/4, proving that
+serialization is one bottleneck, but both applied edits were semantically wrong and the
+other two used an empty preimage. Operational routing therefore remains unchanged.
+
+### Reason
+
+Deterministic assembly can safely separate a useful edit idea from patch syntax, but it
+must not convert an invalid contract or incorrect behavior into a PASS. Keeping the path
+experimental preserves this diagnostic value without weakening ADR-006 or ADR-009.

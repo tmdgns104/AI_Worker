@@ -287,3 +287,65 @@ from default escalation and retained only as an unqualified research Candidate.
 Compare strict structured edits (`path`, exact `old`, exact `new`) against unified diff
 on the same cases. Let the Harness construct the diff deterministically, reject ambiguous
 or repeated snippets, and preserve apply/path/size/exact-test gates.
+
+---
+
+## 2026-08-30 — R-007 Structured Edit Contract Experiment
+
+### Hypothesis
+
+If unified-diff serialization is the dominant failure, exact old/new structured edits
+should improve deterministic application and exact-test pass rates on the same R001/R002
+tasks without using a larger model.
+
+### Conditions
+
+- Suite: `team-project-os-structured-edit-v1`; run `BENCH-20260830-111950`
+- Models: Qwen Coder 7B Q4_K_M and Qwen Coder 14B Q3_K_S
+- Contracts: direct diff versus strict JSON exact replacement on both frozen cases
+- Runtime: loopback Ollama, temperature 0, seed 42, context 8192, timeout 300 s,
+  sequential execution, repetition 1, retry 0, fallback none
+- Baseline: clean disposable Target clone at `3c05219`; frozen hashes checked before/after
+- Structured hard gates: exact schema, safe allowed path, unique non-empty preimage,
+  all preconditions before atomic application, changed-line limit, required semantics,
+  deterministic diff check/reapply/postimage equality, and exact focused test
+- Gold calibration: both structured Gold Candidates scored 100 before evaluated calls
+
+An earlier zero-call preflight (`BENCH-20260830-111827`) rejected the R002 Gold because a
+multi-line LF anchor did not exactly match the Windows CRLF checkout. Before any model
+call, the Gold was corrected to the smallest unique single-line preimage and a matching
+CRLF replacement. This diagnostic is retained rather than hidden.
+
+### Result
+
+- 8/8 requests completed; summed Local latency 82.454 s; retries 0.
+- Direct diff: 0/4 final PASS, 0/4 deterministic apply, 0/4 focused test.
+- Structured edit: 0/4 final PASS, 2/4 deterministic apply/diff generation, 0/4
+  semantic correctness, 0/4 focused test.
+- 7B mean latency: direct 7.55 s versus structured 2.49 s.
+- 14B mean latency: direct 22.08 s versus structured 9.10 s.
+- Strict structured JSON: 0/4. All outputs used fences; two were extractable and had a
+  valid exact edit, but strict-format failure remained a hard-gate failure.
+
+### Failure Slices
+
+- R001 direct: corrupt or unrelated diffs; neither fixed the import.
+- R001 structured: both models exactly replaced the existing import and the Harness
+  produced a valid re-applicable diff, but both chose `.test_conversation_import_v016`.
+  Focused discovery rejected that incorrect relative-import semantics.
+- R002 direct: corrupt hunks and wrong behavior/test placement.
+- R002 structured: both models emitted empty `old_text`, so the Harness rejected the
+  Candidate before writing. Both proposed `total == 2`, violating the required total 1.
+
+### Conclusion
+
+Patch serialization is a demonstrated but non-exclusive bottleneck: structured assembly
+improved deterministic application from 0/4 to 2/4. It did not improve final acceptance
+because semantic correctness and strict contract following were 0/4. Neither model is
+qualified, structured output remains experimental, and Qwen 14B remains research-only.
+
+### Next Experiment
+
+Keep models and hard gates fixed. Supply explicit behavior assertions plus a deterministic
+list of small unique anchor choices, then test whether removing free-form preimage
+selection improves semantic and contract success without fuzzy matching.

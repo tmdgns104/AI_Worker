@@ -36,6 +36,22 @@ class SuiteValidationTests(unittest.TestCase):
         )
         self.assertTrue(all(case["allow_recount"] for case in corrected["cases"]))
 
+    def test_structured_edit_suite_is_frozen_and_valid(self):
+        suite = benchmark_runner.load_suite(
+            ROOT / "benchmarks" / "structured_edit_suite_v1.json"
+        )
+
+        self.assertEqual("team-project-os-structured-edit-v1", suite["suite_id"])
+        self.assertEqual(4, len(suite["cases"]))
+        self.assertEqual(
+            {"direct_diff", "structured_edit"},
+            {case["output_contract"] for case in suite["cases"]},
+        )
+        self.assertEqual(
+            ["qwen2.5-coder:7b", "qwen2.5-coder:14b-instruct-q3_K_S"],
+            suite["candidates"]["coder"],
+        )
+
     def test_duplicate_case_ids_are_rejected(self):
         suite = benchmark_runner.load_suite(ROOT / "benchmarks" / "suite_v2.json")
         suite["cases"][1]["case_id"] = suite["cases"][0]["case_id"]
@@ -225,6 +241,53 @@ class DeterministicEvaluatorTests(unittest.TestCase):
         self.assertTrue(result["format_recounted"])
         self.assertTrue(benchmark_runner.all_hard_gates_pass(result))
 
+    def test_structured_edit_builds_and_reapplies_deterministic_diff(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "target"
+            target.mkdir()
+            benchmark_runner.run_cmd(["git", "init", "--quiet"], cwd=target, check=True)
+            benchmark_runner.run_cmd(
+                ["git", "config", "user.email", "benchmark@example.invalid"],
+                cwd=target,
+                check=True,
+            )
+            benchmark_runner.run_cmd(
+                ["git", "config", "user.name", "Benchmark"], cwd=target, check=True
+            )
+            (target / "sample.py").write_text("old\n", encoding="utf-8")
+            benchmark_runner.run_cmd(["git", "add", "sample.py"], cwd=target, check=True)
+            benchmark_runner.run_cmd(
+                ["git", "commit", "--quiet", "-m", "baseline"], cwd=target, check=True
+            )
+            case = {
+                "allowed_files": ["sample.py"],
+                "required_patch_terms": ["new"],
+                "test_command": [
+                    "python",
+                    "-c",
+                    "from pathlib import Path; assert Path('sample.py').read_text() == 'new\\n'",
+                ],
+                "max_added_lines": 1,
+                "max_changed_lines": 2,
+                "max_edits": 1,
+                "ensure_test_package": False,
+            }
+            raw = json.dumps(
+                {
+                    "edits": [
+                        {"path": "sample.py", "old_text": "old", "new_text": "new"}
+                    ]
+                }
+            )
+
+            result = benchmark_runner.evaluate_structured_edit(case, raw, target, 85)
+
+        self.assertTrue(result["structured_contract_correctness"])
+        self.assertTrue(result["deterministic_application_correctness"])
+        self.assertTrue(result["generated_diff_correctness"])
+        self.assertTrue(result["focused_test_correctness"])
+        self.assertTrue(benchmark_runner.all_hard_gates_pass(result))
+
     def test_minimal_escalation_prompt_omits_old_patch(self):
         suite = benchmark_runner.load_suite(ROOT / "benchmarks" / "escalation_suite_v1.json")
         case = next(case for case in suite["cases"] if case["case_id"] == "ESC-R001-MIN")
@@ -251,6 +314,30 @@ class DeterministicEvaluatorTests(unittest.TestCase):
         recommendation = summary["recommendations"]["coder"]
         self.assertIsNone(recommendation["primary"])
         self.assertEqual("candidate-model", recommendation["best_observed"])
+
+    def test_contract_summary_keeps_correctness_layers_separate(self):
+        result = {
+            "role": "coder",
+            "model": "candidate-model",
+            "candidate_format": "structured_edit",
+            "request_success": True,
+            "score": 90,
+            "latency_seconds": 1.0,
+            "semantic_correctness": True,
+            "structured_contract_correctness": True,
+            "deterministic_application_correctness": True,
+            "generated_diff_correctness": True,
+            "focused_test_correctness": True,
+            "hard_gates": {"all": True},
+        }
+
+        summary = benchmark_runner.summarize_results(self.suite, [result])
+
+        contract = summary["contract_comparison"][0]
+        self.assertEqual(1, contract["semantic_passes"])
+        self.assertEqual(1, contract["contract_passes"])
+        self.assertEqual(1, contract["generated_diff_passes"])
+        self.assertTrue(contract["qualified"])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,33 @@
+```diff
+diff --git a/tests/test_v016_blocker_regressions.py b/tests/test_v016_blocker_regressions.py
+index 1234567..89abcde 100644
+--- a/tests/test_v016_blocker_regressions.py
++++ b/tests/test_v016_blocker_regressions.py
+@@ -89,6 +89,24 @@ class V016BlockerUnitTests(unittest.TestCase):
+         self.assertEqual(total, 5)
+ 
+     def test_first_oversized_message_is_selected_for_progress(self):
++        messages = [
++            ConversationMessage(1, "user", "x" * 1000, ""),
++            ConversationMessage(2, "user", "y" * 500, ""),
++            ConversationMessage(3, "user", "z" * 500, ""),
++        ]
++
++        selected, total = select_message_chunk(
++            messages,
++            after_cursor=0,
++            max_messages=1,
++            max_characters=1000,
++        )
++        self.assertEqual([item.cursor for item in selected], [1])
++        self.assertEqual(total, 3)
++
++        selected, total = select_message_chunk(
++            messages,
++            after_cursor=0,
++            max_messages=2,
++            max_characters=1000,
++        )
++        self.assertEqual([item.cursor for item in selected], [1, 2])
++        self.assertEqual(total, 3)
+```

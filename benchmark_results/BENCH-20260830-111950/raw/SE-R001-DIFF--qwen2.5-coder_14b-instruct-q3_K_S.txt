@@ -1,0 +1,13 @@
+```diff
+diff --git a/tests/test_v016_blocker_regressions.py b/tests/test_v016_blocker_regressions.py
+index 1234567..89abcde 100644
+--- a/tests/test_v016_blocker_regressions.py
++++ b/tests/test_v016_blocker_regressions.py
+@@ -19,7 +19,7 @@ from local_bridge.providers import ProviderResult, build_invocation
+ from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID
+ 
+ 
+-EMPTY_DELTA = {
++EMPTY_DELTA = {
+     "project_updates": {},
+```

@@ -1,0 +1,11 @@
+```json
+{
+  "edits": [
+    {
+      "path": "tests/test_v016_blocker_regressions.py",
+      "old_text": "from tests.test_conversation_import_v016 import CodexFixture, SESSION_ID",
+      "new_text": "from .test_conversation_import_v016 import CodexFixture, SESSION_ID"
+    }
+  ]
+}
+```
